@@ -1,5 +1,7 @@
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import { AuthHeaderFallback } from "@/components/auth/AuthHeaderFallback";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Condomínio",
@@ -10,7 +12,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt">
       <body style={{ fontFamily: "system-ui, sans-serif", margin: 0 }}>
-        <AuthHeader />
+        <Suspense fallback={<AuthHeaderFallback />}>
+          <AuthHeader />
+        </Suspense>
         {children}
       </body>
     </html>
