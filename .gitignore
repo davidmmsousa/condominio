@@ -1,0 +1,9 @@
+node_modules
+.next
+.env.local
+.env
+
+
+test.txt
+*.tsbuildinfo
+package.json.tmp

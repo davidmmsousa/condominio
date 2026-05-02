@@ -1,0 +1,27 @@
+import { AdminSubNav } from "@/app/admin/AdminSubNav";
+import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
+import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
+
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const supabase = await createServerRouteSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/entrar?redirect=%2Fadmin");
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("role").maybeSingle();
+  if (profile?.role !== "admin") {
+    redirect("/minha-conta");
+  }
+
+  return (
+    <>
+      <AdminSubNav />
+      <div style={{ padding: "0 24px 48px", maxWidth: 1100, margin: "0 auto" }}>{children}</div>
+    </>
+  );
+}
