@@ -35,7 +35,7 @@ export function LoginForm() {
 
       if (profileErr || !profile) {
         await supabase.auth.signOut();
-        setError("Conta sem perfil. Contacta o administrador.");
+        setError(profileErr?.message ?? "Conta sem perfil. Contacta o administrador.");
         return;
       }
 
@@ -51,6 +51,8 @@ export function LoginForm() {
         router.push("/minha-conta");
       }
       router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao entrar. Abre a consola do browser (F12) se precisares de mais detalhe.");
     } finally {
       setLoading(false);
     }

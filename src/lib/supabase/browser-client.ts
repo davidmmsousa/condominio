@@ -1,6 +1,21 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { env } from "@/lib/env";
 
+/**
+ * Lê apenas variáveis públicas aqui — não importes `@/lib/env` no browser:
+ * em produção o Zod contra `process.env` no cliente causa crashes difíceis de ver.
+ */
 export function createBrowserSupabaseClient() {
-  return createBrowserClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  const key = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
+  if (!url || !key) {
+    throw new Error(
+      "Faltam NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY no build. Na Vercel: Settings → Environment Variables (Production e Preview) → Redeploy.",
+    );
+  }
+  try {
+    new URL(url);
+  } catch {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL não é um URL válido (revisa a variável na Vercel).");
+  }
+  return createBrowserClient(url, key);
 }
