@@ -16,3 +16,18 @@ create policy "condominiums_admin_all" on public.condominiums
   for all
   using (public.current_profile_role() = 'admin')
   with check (public.current_profile_role() = 'admin');
+
+-- Primeiro insert com tabela vazia: ver patch_condominiums_bootstrap_insert.sql
+drop policy if exists "condominiums_bootstrap_insert_when_empty" on public.condominiums;
+create policy "condominiums_bootstrap_insert_when_empty" on public.condominiums
+  for insert
+  to authenticated
+  with check (
+    (select count(*)::bigint from public.condominiums) = 0
+    and exists (
+      select 1
+      from public.profiles p
+      where p.user_id = auth.uid()
+        and p.role = 'admin'::public.user_role
+    )
+  );

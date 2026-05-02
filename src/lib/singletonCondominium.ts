@@ -27,7 +27,8 @@ export async function ensureSingletonCondominiumId(supabase: SupabaseClient): Pr
       insErr.code === "42501" ||
       insErr.message.toLowerCase().includes("row-level security") ||
       insErr.message.toLowerCase().includes("violates row-level security")
-        ? ' Executa no SQL Editor: insert into public.condominiums (name) values (\'Condomínio\');'
+        ? " Corre no Supabase o ficheiro supabase/patch_condominiums_bootstrap_insert.sql — ou faz à mão:" +
+          " insert into public.condominiums (name) values ('Condomínio');"
         : "";
     throw new Error(`Não foi possível criar o condomínio inicial (${insErr.message}).${hint}`);
   }
