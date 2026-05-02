@@ -226,10 +226,19 @@ create policy "profiles_self_read" on public.profiles
   for select
   using (user_id = auth.uid());
 
-create policy "profiles_admin_write" on public.profiles
-  for all
+-- Não usar FOR ALL + current_profile_role em SELECT: causa recursão infinita em RLS.
+create policy "profiles_admin_insert" on public.profiles
+  for insert
+  with check (public.current_profile_role() = 'admin');
+
+create policy "profiles_admin_update" on public.profiles
+  for update
   using (public.current_profile_role() = 'admin')
   with check (public.current_profile_role() = 'admin');
+
+create policy "profiles_admin_delete" on public.profiles
+  for delete
+  using (public.current_profile_role() = 'admin');
 
 create policy "units_admin_all" on public.units
   for all

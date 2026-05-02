@@ -1,5 +1,7 @@
 -- Corrige "stack depth limit exceeded" no login (SELECT em profiles com policies que chamam estas funções).
 -- Executar uma vez no Supabase SQL Editor.
+-- Se ainda houver stack depth em /admin (units, condominiums), corre também:
+--   supabase/patch_profiles_admin_mutate_only.sql
 
 create or replace function public.current_profile_role()
 returns public.user_role

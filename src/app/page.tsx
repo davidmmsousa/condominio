@@ -7,7 +7,7 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
   const { data: profile } = user
-    ? await supabase.from("profiles").select("role").maybeSingle()
+    ? await supabase.from("profiles").select("role").eq("user_id", user.id).maybeSingle()
     : { data: null };
 
   return (

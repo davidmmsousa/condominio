@@ -47,3 +47,5 @@ $$;
 revoke all on function public.bootstrap_singleton_condominium_if_empty() from public;
 grant execute on function public.bootstrap_singleton_condominium_if_empty() to authenticated;
 grant execute on function public.bootstrap_singleton_condominium_if_empty() to service_role;
+
+alter function public.bootstrap_singleton_condominium_if_empty() owner to postgres;
