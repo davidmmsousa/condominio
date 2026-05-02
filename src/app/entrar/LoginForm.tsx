@@ -1,18 +1,16 @@
 "use client";
 
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-function safeRedirectParam(raw: string | null): string | null {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
-  return raw;
-}
+type Props = {
+  redirectFromQuery: string | null;
+};
 
-export function LoginForm() {
+export function LoginForm({ redirectFromQuery }: Props) {
   const router = useRouter();
-  const params = useSearchParams();
-  const redirect = safeRedirectParam(params.get("redirect"));
+  const redirect = redirectFromQuery;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

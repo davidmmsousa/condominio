@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
+import { safeRedirectParam } from "./redirectParam";
 import { signOutServer } from "./actions";
 import { LoginForm } from "./LoginForm";
 
-export default async function EntrarPage() {
+type Props = {
+  searchParams: Promise<{ redirect?: string | string[] }>;
+};
+
+export default async function EntrarPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const raw =
+    typeof sp.redirect === "string" ? sp.redirect : Array.isArray(sp.redirect) ? sp.redirect[0] : undefined;
+  const redirectFromQuery = safeRedirectParam(raw ?? null);
+
   const supabase = await createServerRouteSupabaseClient();
   const {
     data: { user },
@@ -46,9 +55,7 @@ export default async function EntrarPage() {
     <main style={{ padding: 24, maxWidth: 480 }}>
       <h1 style={{ marginTop: 0 }}>Entrar</h1>
       <p style={{ color: "#444" }}>Utiliza a conta criada no Supabase Auth.</p>
-      <Suspense fallback={<p>A carregar…</p>}>
-        <LoginForm />
-      </Suspense>
+      <LoginForm redirectFromQuery={redirectFromQuery} />
       <p style={{ marginTop: 24 }}>
         <Link href="/">← Voltar ao início</Link>
       </p>
