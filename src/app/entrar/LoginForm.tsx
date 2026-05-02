@@ -1,14 +1,16 @@
 "use client";
 
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type Props = {
   redirectFromQuery: string | null;
+  infoBanner?: string | null;
 };
 
-export function LoginForm({ redirectFromQuery }: Props) {
+export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
   const router = useRouter();
   const redirect = redirectFromQuery;
 
@@ -66,6 +68,11 @@ export function LoginForm({ redirectFromQuery }: Props) {
         padding: "8px 0",
       }}
     >
+      {infoBanner ? (
+        <p role="status" style={{ margin: 0, fontSize: 14, color: "#065f46", background: "#d1fae5", padding: 12, borderRadius: 8 }}>
+          {infoBanner}
+        </p>
+      ) : null}
       <label style={{ display: "grid", gap: 6 }}>
         <span>Email</span>
         <input
@@ -83,6 +90,11 @@ export function LoginForm({ redirectFromQuery }: Props) {
           }}
         />
       </label>
+      <div style={{ textAlign: "right", marginBottom: -6 }}>
+        <Link href="/entrar/recuperar" style={{ fontSize: 14, color: "#2563eb" }}>
+          Esqueci-me da palavra-passe
+        </Link>
+      </div>
       <label style={{ display: "grid", gap: 6 }}>
         <span>Palavra-passe</span>
         <input

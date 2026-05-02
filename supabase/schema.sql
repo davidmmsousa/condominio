@@ -194,10 +194,14 @@ alter table public.receipts enable row level security;
 alter table public.expense_categories enable row level security;
 alter table public.expenses enable row level security;
 
+-- SECURITY DEFINER + search_path evita recursão RLS quando policies chamam estas funções
+-- (PostgreSQL volta a aplicar políticas ao ler profiles → "stack depth limit exceeded").
 create or replace function public.current_profile_role()
 returns public.user_role
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select role
   from public.profiles
@@ -208,6 +212,8 @@ create or replace function public.current_profile_unit_id()
 returns uuid
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select unit_id
   from public.profiles
