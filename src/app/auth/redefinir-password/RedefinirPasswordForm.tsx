@@ -65,7 +65,11 @@ export function RedefinirPasswordForm() {
   }
 
   if (checking) {
-    return <p>A validar sessão…</p>;
+    return (
+      <p style={{ margin: 0, color: "#64748b", fontSize: 15 }}>
+        A validar sessão de recuperação…
+      </p>
+    );
   }
 
   if (!sessionOk) {
@@ -84,9 +88,11 @@ export function RedefinirPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 14, maxWidth: 360 }}>
+    <form onSubmit={onSubmit} style={{ display: "grid", gap: 16, width: "100%", maxWidth: "100%", paddingTop: 4 }}>
       <label style={{ display: "grid", gap: 6 }}>
-        <span>Nova palavra-passe (mín. 8 caracteres)</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>
+          Nova palavra-passe (mín. 8 caracteres)
+        </span>
         <input
           type="password"
           autoComplete="new-password"
@@ -96,15 +102,15 @@ export function RedefinirPasswordForm() {
           minLength={8}
           disabled={loading}
           style={{
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: "1px solid #ccc",
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #cbd5e1",
             fontSize: 16,
           }}
         />
       </label>
       <label style={{ display: "grid", gap: 6 }}>
-        <span>Repetir palavra-passe</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Repetir palavra-passe</span>
         <input
           type="password"
           autoComplete="new-password"
@@ -114,9 +120,9 @@ export function RedefinirPasswordForm() {
           minLength={8}
           disabled={loading}
           style={{
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: "1px solid #ccc",
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #cbd5e1",
             fontSize: 16,
           }}
         />
@@ -130,13 +136,16 @@ export function RedefinirPasswordForm() {
         type="submit"
         disabled={loading}
         style={{
-          padding: "12px 16px",
-          borderRadius: 8,
+          marginTop: 4,
+          padding: "14px 16px",
+          borderRadius: 10,
           border: "none",
-          background: loading ? "#999" : "#111",
+          background: loading ? "#94a3b8" : "linear-gradient(180deg,#1e293b,#0f172a)",
           color: "#fff",
           fontSize: 16,
+          fontWeight: 600,
           cursor: loading ? "not-allowed" : "pointer",
+          boxShadow: loading ? undefined : "0 8px 24px rgba(15,23,42,0.18)",
         }}
       >
         {loading ? "A guardar…" : "Guardar nova palavra-passe"}

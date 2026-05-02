@@ -16,8 +16,8 @@ export function RecuperarForm() {
     try {
       const supabase = createBrowserSupabaseClient();
       const origin = window.location.origin;
-      const nextPath = "/auth/redefinir-password";
-      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+      // Route dedicado: o fluxo não perde redirect (evita "/" após clicar link)
+      const redirectTo = `${origin}/auth/recovery`;
 
       const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
       if (err) {
@@ -47,9 +47,9 @@ export function RecuperarForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 14, maxWidth: 360 }}>
+    <form onSubmit={onSubmit} style={{ display: "grid", gap: 16, width: "100%", maxWidth: "100%", paddingTop: 4 }}>
       <label style={{ display: "grid", gap: 6 }}>
-        <span>Email da conta</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Email da conta</span>
         <input
           type="email"
           autoComplete="email"
@@ -58,10 +58,11 @@ export function RecuperarForm() {
           required
           disabled={loading}
           style={{
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: "1px solid #ccc",
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #cbd5e1",
             fontSize: 16,
+            background: loading ? "#f8fafc" : "#fff",
           }}
         />
       </label>
@@ -74,13 +75,15 @@ export function RecuperarForm() {
         type="submit"
         disabled={loading}
         style={{
-          padding: "12px 16px",
-          borderRadius: 8,
+          padding: "14px 16px",
+          borderRadius: 10,
           border: "none",
-          background: loading ? "#999" : "#111",
+          background: loading ? "#94a3b8" : "linear-gradient(180deg,#1e293b,#0f172a)",
           color: "#fff",
           fontSize: 16,
+          fontWeight: 600,
           cursor: loading ? "not-allowed" : "pointer",
+          boxShadow: loading ? undefined : "0 8px 24px rgba(15,23,42,0.18)",
         }}
       >
         {loading ? "A enviar…" : "Enviar link por email"}

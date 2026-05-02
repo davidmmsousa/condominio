@@ -1,5 +1,6 @@
 import { AuthHeader } from "@/components/auth/AuthHeader";
 import { AuthHeaderFallback } from "@/components/auth/AuthHeaderFallback";
+import { CaptureRecoverySession } from "@/components/auth/CaptureRecoverySession";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 
@@ -12,6 +13,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt">
       <body style={{ fontFamily: "system-ui, sans-serif", margin: 0 }}>
+        <Suspense fallback={null}>
+          <CaptureRecoverySession />
+        </Suspense>
         <Suspense fallback={<AuthHeaderFallback />}>
           <AuthHeader />
         </Suspense>

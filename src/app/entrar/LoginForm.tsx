@@ -31,7 +31,18 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
         return;
       }
 
-      const { data: profile, error: profileErr } = await supabase.from("profiles").select("role").maybeSingle();
+      const {
+        data: { user: signedUser },
+      } = await supabase.auth.getUser();
+      if (!signedUser?.id) {
+        setError("Sessão inválida após entrar.");
+        await supabase.auth.signOut();
+        return;
+      }
+      const {
+        data: profile,
+        error: profileErr,
+      } = await supabase.from("profiles").select("role").eq("user_id", signedUser.id).maybeSingle();
 
       if (profileErr || !profile) {
         await supabase.auth.signOut();
@@ -63,9 +74,10 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
       onSubmit={onSubmit}
       style={{
         display: "grid",
-        gap: 14,
-        maxWidth: 360,
-        padding: "8px 0",
+        gap: 16,
+        width: "100%",
+        maxWidth: "100%",
+        padding: "4px 0 0",
       }}
     >
       {infoBanner ? (
@@ -74,7 +86,7 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
         </p>
       ) : null}
       <label style={{ display: "grid", gap: 6 }}>
-        <span>Email</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Email</span>
         <input
           type="email"
           autoComplete="email"
@@ -83,20 +95,22 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
           required
           disabled={loading}
           style={{
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: "1px solid #ccc",
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #cbd5e1",
             fontSize: 16,
+            background: loading ? "#f8fafc" : "#fff",
+            outlineOffset: 2,
           }}
         />
       </label>
-      <div style={{ textAlign: "right", marginBottom: -6 }}>
-        <Link href="/entrar/recuperar" style={{ fontSize: 14, color: "#2563eb" }}>
+      <div style={{ textAlign: "right", marginTop: -4 }}>
+        <Link href="/entrar/recuperar" style={{ fontSize: 13, color: "#4f46e5", fontWeight: 600 }}>
           Esqueci-me da palavra-passe
         </Link>
       </div>
       <label style={{ display: "grid", gap: 6 }}>
-        <span>Palavra-passe</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Palavra-passe</span>
         <input
           type="password"
           autoComplete="current-password"
@@ -105,10 +119,12 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
           required
           disabled={loading}
           style={{
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: "1px solid #ccc",
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #cbd5e1",
             fontSize: 16,
+            background: loading ? "#f8fafc" : "#fff",
+            outlineOffset: 2,
           }}
         />
       </label>
@@ -121,13 +137,16 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
         type="submit"
         disabled={loading}
         style={{
-          padding: "12px 16px",
-          borderRadius: 8,
+          marginTop: 4,
+          padding: "14px 16px",
+          borderRadius: 10,
           border: "none",
-          background: loading ? "#999" : "#111",
+          background: loading ? "#94a3b8" : "linear-gradient(180deg,#1e293b,#0f172a)",
           color: "#fff",
           fontSize: 16,
+          fontWeight: 600,
           cursor: loading ? "not-allowed" : "pointer",
+          boxShadow: loading ? undefined : "0 8px 24px rgba(15,23,42,0.18)",
         }}
       >
         {loading ? "A entrar…" : "Entrar"}

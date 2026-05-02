@@ -10,7 +10,11 @@ export async function AuthHeader() {
 
   let roleLabel: string | null = null;
   if (user) {
-    const { data: profile } = await supabase.from("profiles").select("role").maybeSingle();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
     roleLabel = profile?.role ?? null;
   }
 

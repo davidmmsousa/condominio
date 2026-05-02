@@ -36,6 +36,9 @@ export function AdminSubNav() {
       <Link href="/admin/pagamentos" style={linkStyle}>
         Pagamentos
       </Link>
+      <Link href="/admin/relatorios" style={linkStyle}>
+        Relatórios
+      </Link>
     </nav>
   );
 }

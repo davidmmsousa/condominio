@@ -4,6 +4,7 @@ import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { safeRedirectParam } from "./redirectParam";
 import { signOutServer } from "./actions";
 import { LoginForm } from "./LoginForm";
+import { AuthShell } from "./AuthShell";
 
 type Props = {
   searchParams: Promise<{ redirect?: string | string[]; msg?: string | string[] }>;
@@ -27,44 +28,44 @@ export default async function EntrarPage({ searchParams }: Props) {
   } = await supabase.auth.getUser();
 
   if (user) {
-    const { data: profile } = await supabase.from("profiles").select("role").maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user.id).maybeSingle();
     if (profile?.role === "admin") redirect("/admin");
     if (profile?.role === "resident") redirect("/minha-conta");
 
     return (
-      <main style={{ padding: 24, maxWidth: 480 }}>
-        <h1 style={{ marginTop: 0 }}>Conta sem perfil</h1>
-        <p style={{ color: "#444" }}>
-          Este utilizador não tem linha em <code>profiles</code>. Fecha sessão e tenta outra conta, ou pede apoio ao
-          administrador.
-        </p>
+      <AuthShell eyebrow="Sessão" title="Conta sem perfil" lead="Este utilizador não tem linha em profiles. Contacta o administrador ou usa outra conta.">
         <form action={signOutServer}>
           <button
             type="submit"
             style={{
-              marginTop: 16,
+              marginTop: 4,
               padding: "10px 16px",
               borderRadius: 8,
-              border: "1px solid #ccc",
+              border: "1px solid #cbd5e1",
               background: "#fff",
               cursor: "pointer",
+              fontSize: 15,
             }}
           >
-            Sair
+            Terminar sessão
           </button>
         </form>
-      </main>
+      </AuthShell>
     );
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 480 }}>
-      <h1 style={{ marginTop: 0 }}>Entrar</h1>
-      <p style={{ color: "#444" }}>Utiliza a conta criada no Supabase Auth.</p>
+    <AuthShell
+      eyebrow="Bem-vindo"
+      title="Entrar na app"
+      lead="Utiliza o email da tua conta. Se recuperaste a password recentemente, o link só funciona até expirar — pede novo em “Esqueci-me”."
+    >
       <LoginForm redirectFromQuery={redirectFromQuery} infoBanner={infoBanner} />
-      <p style={{ marginTop: 24 }}>
-        <Link href="/">← Voltar ao início</Link>
+      <p style={{ marginTop: 20, marginBottom: 0, textAlign: "center" as const }}>
+        <Link href="/" style={{ color: "#64748b", fontSize: 14, textDecoration: "none", fontWeight: 500 }}>
+          ← Voltar ao início
+        </Link>
       </p>
-    </main>
+    </AuthShell>
   );
 }

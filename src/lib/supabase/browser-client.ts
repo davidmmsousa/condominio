@@ -9,7 +9,7 @@ export function createBrowserSupabaseClient() {
   const key = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
   if (!url || !key) {
     throw new Error(
-      "Faltam NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY no build. Na Vercel: Settings → Environment Variables (Production e Preview) → Redeploy.",
+      "Faltam NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY no build. Na Vercel: Environment Variables → Redeploy.",
     );
   }
   try {
@@ -17,5 +17,10 @@ export function createBrowserSupabaseClient() {
   } catch {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL não é um URL válido (revisa a variável na Vercel).");
   }
-  return createBrowserClient(url, key);
+  return createBrowserClient(url, key, {
+    auth: {
+      detectSessionInUrl: true,
+      flowType: "pkce",
+    },
+  });
 }

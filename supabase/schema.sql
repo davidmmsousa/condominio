@@ -7,6 +7,7 @@ create extension if not exists "uuid-ossp";
 create table if not exists public.condominiums (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
+  operating_year integer not null default (extract(year from timezone('Europe/Lisbon'::text, now())))::integer,
   created_at timestamptz not null default now()
 );
 

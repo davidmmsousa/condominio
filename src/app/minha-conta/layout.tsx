@@ -12,7 +12,7 @@ export default async function MinhaContaLayout({ children }: { children: ReactNo
     redirect("/entrar?redirect=%2Fminha-conta");
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role").maybeSingle();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user.id).maybeSingle();
   if (profile?.role === "admin") {
     redirect("/admin");
   }
