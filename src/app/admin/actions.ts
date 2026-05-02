@@ -4,6 +4,7 @@ import { allocatePaymentCurrentFirst } from "@/lib/billing/allocatePayment";
 import { correnteDueDateForMonth, extraordinariaDefaultDueDate } from "@/lib/billing/dueDates";
 import { splitTotalCentsByPermilages } from "@/lib/billing/splitByPermilage";
 import { parseEurosToCents } from "@/lib/money";
+import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { revalidatePath } from "next/cache";
 
@@ -21,14 +22,7 @@ async function requireAdmin() {
 }
 
 async function singletonCondoId(supabase: Awaited<ReturnType<typeof createServerRouteSupabaseClient>>) {
-  const { data, error } = await supabase
-    .from("condominiums")
-    .select("id")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) throw new Error("Não há condomínio na base de dados.");
-  return data.id;
+  return ensureSingletonCondominiumId(supabase);
 }
 
 export async function createUnitAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {

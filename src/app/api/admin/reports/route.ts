@@ -1,3 +1,4 @@
+import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { rowsToCsv } from "@/lib/csv";
 import { NextRequest, NextResponse } from "next/server";
@@ -35,23 +36,28 @@ export async function GET(req: NextRequest) {
   const paidStartIso = `${year}-01-01T00:00:00.000Z`;
   const paidEndExclusiveIso = `${year + 1}-01-01T00:00:00.000Z`;
 
-  const { data: condo, error: cErr } = await supabase
-    .from("condominiums")
-    .select("id, operating_year")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (cErr) {
+  let cid: string;
+  try {
+    cid = await ensureSingletonCondominiumId(supabase);
+  } catch (e) {
     return NextResponse.json(
-      { error: cErr.message, hint: "Corre supabase/patch_operating_year.sql se faltar operating_year ou RLS." },
+      { error: e instanceof Error ? e.message : "Condomínio em falta.", hint: "Ver supabase/seed_condominium_if_missing.sql" },
       { status: 500 },
     );
   }
-  if (!condo?.id) {
-    return NextResponse.json({ error: "Sem linha condominiums." }, { status: 500 });
+
+  const { data: condo, error: cErr } = await supabase
+    .from("condominiums")
+    .select("id, operating_year")
+    .eq("id", cid)
+    .single();
+
+  if (cErr || !condo?.id) {
+    return NextResponse.json(
+      { error: cErr?.message ?? "Sem condomínio.", hint: "Corre supabase/patch_operating_year.sql se faltar operating_year ou RLS." },
+      { status: 500 },
+    );
   }
-  const cid = condo.id;
 
   const bom = "\uFEFF";
 

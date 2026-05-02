@@ -1,3 +1,4 @@
+import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import Link from "next/link";
 import { AdvanceYearForm } from "./AdvanceYearForm";
@@ -21,6 +22,12 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
   } = await supabase.auth.getUser();
 
   let operatingYearDisplay: number | string = "—";
+  let bootstrapErr: string | null = null;
+  try {
+    await ensureSingletonCondominiumId(supabase);
+  } catch (e) {
+    bootstrapErr = e instanceof Error ? e.message : "Não foi possível preparar o condomínio.";
+  }
 
   const { data: condo, error: cErr } = await supabase
     .from("condominiums")
@@ -54,6 +61,13 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
         </p>
       ) : null}
 
+      {bootstrapErr ? (
+        <p style={{ background: "#fef3c7", color: "#92400e", padding: 12, borderRadius: 8, maxWidth: 720 }}>
+          {bootstrapErr}
+          {" "}— em alternativa usa o ficheiro <code style={{ fontSize: 13 }}>supabase/seed_condominium_if_missing.sql</code>{" "}
+          no SQL Editor.
+        </p>
+      ) : null}
       {err ? (
         <p style={{ background: "#fee2e2", color: "#991b1b", padding: 12, borderRadius: 8, maxWidth: 720 }}>
           {decodeURIComponent(err)}

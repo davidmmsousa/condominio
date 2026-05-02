@@ -1,5 +1,6 @@
 "use server";
 
+import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -14,11 +15,17 @@ export async function advanceOperatingYear() {
   const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user.id).maybeSingle();
   if (profile?.role !== "admin") redirect("/minha-conta");
 
+  let cid: string;
+  try {
+    cid = await ensureSingletonCondominiumId(supabase);
+  } catch (e) {
+    redirect("/admin/relatorios?err=" + encodeURIComponent(e instanceof Error ? e.message : "Condomínio em falta."));
+  }
+
   const { data: condo, error } = await supabase
     .from("condominiums")
     .select("id, operating_year")
-    .order("created_at", { ascending: true })
-    .limit(1)
+    .eq("id", cid)
     .maybeSingle();
 
   if (error || !condo) {
