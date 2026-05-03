@@ -3,6 +3,8 @@ import { arrayBuffer } from "node:stream/consumers";
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
 
 export type ReceiptPdfInput = {
+  /** Texto cinzento logo abaixo de "Recibo" (morada / identificação do prédio). */
+  condominiumHeaderSubline?: string | null;
   condominiumName: string;
   receiptNumber: string;
   issuedAtIso: string;
@@ -36,7 +38,9 @@ function ReceiptDoc(input: ReceiptPdfInput) {
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.h1}>Recibo</Text>
-        <Text style={styles.muted}>{input.condominiumName}</Text>
+        <Text style={styles.muted}>
+          {input.condominiumHeaderSubline?.trim() || input.condominiumName}
+        </Text>
 
         <View style={styles.section}>
           <Text>Recibo nº: {input.receiptNumber}</Text>

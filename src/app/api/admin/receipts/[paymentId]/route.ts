@@ -1,3 +1,4 @@
+import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
@@ -125,6 +126,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ payment
   const receiptNumber = `R/${y}/${payment.id.slice(0, 8).toUpperCase()}`;
 
   const pdf = await renderReceiptPdf({
+    condominiumHeaderSubline: getReceiptHeaderSubline(),
     condominiumName: condo?.name?.trim() || "Condomínio",
     receiptNumber,
     issuedAtIso: payment.paid_at,
