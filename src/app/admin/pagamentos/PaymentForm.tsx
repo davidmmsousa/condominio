@@ -57,7 +57,24 @@ export function PaymentForm({ units }: { units: Array<{ id: string; code: string
         <input name="note" disabled={pending} style={inp} />
       </label>
       {state?.error ? <p style={{ color: "#b00020", margin: 0 }}>{state.error}</p> : null}
-      {state?.ok ? <p style={{ color: "#0a0", margin: 0 }}>{state.message ?? "Pagamento registado."}</p> : null}
+      {state?.ok ? (
+        <div style={{ display: "grid", gap: 8 }}>
+          <p style={{ color: "#0a0", margin: 0 }}>{state.message ?? "Pagamento registado."}</p>
+          {state.paymentId ? (
+            <p style={{ margin: 0, fontSize: 14 }}>
+              <a
+                href={`/api/admin/receipts/${state.paymentId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#1d4ed8", fontWeight: 600 }}
+              >
+                Descarregar recibo PDF
+              </a>{" "}
+              (inclui meses cobertos quando o valor foi aplicado a quotas).
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <button
         type="submit"
         disabled={pending || units.length === 0}

@@ -39,6 +39,7 @@ export default async function PagamentosAdminPage() {
                 <th style={{ padding: "8px 6px" }}>Valor</th>
                 <th style={{ padding: "8px 6px" }}>Meio</th>
                 <th style={{ padding: "8px 6px" }}>Nota</th>
+                <th style={{ padding: "8px 6px" }}>Recibo</th>
               </tr>
             </thead>
             <tbody>
@@ -49,6 +50,11 @@ export default async function PagamentosAdminPage() {
                   <td style={{ padding: "8px 6px" }}>{formatCents(p.amount_cents)}</td>
                   <td style={{ padding: "8px 6px", color: "#555" }}>{p.method ?? "—"}</td>
                   <td style={{ padding: "8px 6px", color: "#555" }}>{p.note ?? "—"}</td>
+                  <td style={{ padding: "8px 6px" }}>
+                    <a href={`/api/admin/receipts/${p.id}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+                      PDF
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>

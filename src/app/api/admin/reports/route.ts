@@ -1,3 +1,4 @@
+import { fetchCondominiumForRelatorios } from "@/lib/condominiumMeta";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { rowsToCsv } from "@/lib/csv";
@@ -46,18 +47,16 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { data: condo, error: cErr } = await supabase
-    .from("condominiums")
-    .select("id, operating_year")
-    .eq("id", cid)
-    .single();
-
-  if (cErr || !condo?.id) {
+  const { row: condoRow, error: condoErr, missingOperatingYearColumn } = await fetchCondominiumForRelatorios(supabase);
+  if (condoErr || !condoRow?.id || condoRow.id !== cid) {
     return NextResponse.json(
-      { error: cErr?.message ?? "Sem condomínio.", hint: "Corre supabase/patch_operating_year.sql se faltar operating_year ou RLS." },
+      { error: condoErr?.message ?? "Sem condomínio.", hint: "Corre supabase/patch_operating_year.sql se faltar operating_year ou RLS." },
       { status: 500 },
     );
   }
+  const operatingYearForReport = missingOperatingYearColumn
+    ? "(aplica patch_operating_year.sql — coluna operating_year em falta)"
+    : String(condoRow.operating_year ?? "—");
 
   const bom = "\uFEFF";
 
@@ -212,7 +211,7 @@ export async function GET(req: NextRequest) {
   const fullTxt = [
     `RELATÓRIO FINAL — ANO CALENDÁRIO ${year}`,
     `Gerado em: ${new Date().toISOString()}`,
-    `Ano operacional definido na app (condominiums.operating_year): ${condo.operating_year}`,
+    `Ano operacional definido na app (condominiums.operating_year): ${operatingYearForReport}`,
     "",
     "--- RESUMO POR FRAÇÃO ---",
     rowsToCsv(summaryCsvLines),

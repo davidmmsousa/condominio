@@ -8,7 +8,7 @@ import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { revalidatePath } from "next/cache";
 
-export type ActionState = { ok?: boolean; error?: string; message?: string };
+export type ActionState = { ok?: boolean; error?: string; message?: string; paymentId?: string };
 
 async function requireAdmin() {
   const supabase = await createServerRouteSupabaseClient();
@@ -274,7 +274,9 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
     let message = `Pagamento registado. Alocações: ${allocations.length}.`;
     if (remainingCents > 0) message += ` Crédito / sem cobrança para aplicar: ${(remainingCents / 100).toFixed(2)} €`;
 
-    return { ok: true, message };
+    revalidatePath("/admin/contas-correntes");
+
+    return { ok: true, message, paymentId: payment.id };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao registar pagamento." };
   }

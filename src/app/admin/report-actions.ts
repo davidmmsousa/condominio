@@ -28,6 +28,18 @@ export async function advanceOperatingYear() {
     .eq("id", cid)
     .maybeSingle();
 
+  if (
+    error?.message?.includes("operating_year") &&
+    error.message.toLowerCase().includes("does not exist")
+  ) {
+    redirect(
+      "/admin/relatorios?err=" +
+        encodeURIComponent(
+          "Falta a coluna operating_year. No Supabase SQL Editor executa o ficheiro supabase/patch_operating_year.sql.",
+        ),
+    );
+  }
+
   if (error || !condo) {
     redirect("/admin/relatorios?err=" + encodeURIComponent("Não foi possível ler o condomínio. Corre o patch_operating_year.sql na base."));
   }

@@ -11,6 +11,10 @@ export type ReceiptPdfInput = {
   unitCode: string;
   amountCents: number;
   lines: Array<{ label: string; amountCents: number }>;
+  /** Resumo dos meses / quotas cobertos por esta transferência */
+  periodSummary?: string | null;
+  paymentMethod?: string | null;
+  paymentNote?: string | null;
 };
 
 const styles = StyleSheet.create({
@@ -40,10 +44,18 @@ function ReceiptDoc(input: ReceiptPdfInput) {
         </View>
 
         <View style={styles.section}>
-          <Text>Fraçăo: {input.unitCode}</Text>
+          <Text>Fração: {input.unitCode}</Text>
           <Text>Pagador: {input.payerName}</Text>
           {input.payerEmail ? <Text>Email: {input.payerEmail}</Text> : null}
+          {input.paymentMethod ? <Text>Meio: {input.paymentMethod}</Text> : null}
+          {input.paymentNote ? <Text>Nota registo: {input.paymentNote}</Text> : null}
         </View>
+
+        {input.periodSummary ? (
+          <View style={styles.section}>
+            <Text style={{ fontSize: 10, color: "#333" }}>{input.periodSummary}</Text>
+          </View>
+        ) : null}
 
         <View style={[styles.section, styles.tableHeader]}>
           <Text>Detalhe</Text>

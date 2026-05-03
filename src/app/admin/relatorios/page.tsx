@@ -1,3 +1,4 @@
+import { fetchCondominiumForRelatorios } from "@/lib/condominiumMeta";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import Link from "next/link";
@@ -29,12 +30,7 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
     bootstrapErr = e instanceof Error ? e.message : "Não foi possível preparar o condomínio.";
   }
 
-  const { data: condo, error: cErr } = await supabase
-    .from("condominiums")
-    .select("operating_year, name")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const { row: condo, error: cErr, missingOperatingYearColumn } = await fetchCondominiumForRelatorios(supabase);
 
   if (!cErr && condo?.operating_year !== undefined && condo.operating_year !== null) {
     operatingYearDisplay = condo.operating_year as number;
@@ -68,6 +64,13 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
           no SQL Editor.
         </p>
       ) : null}
+      {missingOperatingYearColumn ? (
+        <p style={{ background: "#fef3c7", color: "#92400e", padding: 12, borderRadius: 8, maxWidth: 720 }}>
+          A coluna <code>operating_year</code> ainda não existe na tabela <code>condominiums</code>. Executa no Supabase
+          o ficheiro <code style={{ fontSize: 13 }}>supabase/patch_operating_year.sql</code>. Até lá, o botão “novo
+          ano” fica desactivado; os relatórios por ano civil continuam a funcionar.
+        </p>
+      ) : null}
       {err ? (
         <p style={{ background: "#fee2e2", color: "#991b1b", padding: 12, borderRadius: 8, maxWidth: 720 }}>
           {decodeURIComponent(err)}
@@ -93,15 +96,14 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
         <p style={{ color: "#555", marginBottom: 12 }}>
           Conservatório atual: <strong>{operatingYearDisplay}</strong>{" "}
           {condo?.name ? <span style={{ color: "#64748b" }}>({condo.name})</span> : null}
-          {cErr ? (
+          {cErr && !missingOperatingYearColumn ? (
             <span style={{ color: "#b00020" }}>
               {" "}
-              — erro a ler (aplica{" "}
-              <code style={{ fontSize: 12 }}>patch_operating_year.sql</code>): {cErr.message}
+              — erro a ler: {cErr.message}
             </span>
           ) : null}
         </p>
-        <AdvanceYearForm />
+        <AdvanceYearForm disabled={missingOperatingYearColumn} />
       </section>
 
       <section style={{ marginTop: 36 }}>

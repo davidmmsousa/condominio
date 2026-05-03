@@ -36,6 +36,9 @@ export function AdminSubNav() {
       <Link href="/admin/pagamentos" style={linkStyle}>
         Pagamentos
       </Link>
+      <Link href="/admin/contas-correntes" style={linkStyle}>
+        Contas correntes
+      </Link>
       <Link href="/admin/despesas" style={linkStyle}>
         Despesas
       </Link>
