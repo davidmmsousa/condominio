@@ -1,6 +1,8 @@
 "use server";
 
 import { allocatePaymentCurrentFirst } from "@/lib/billing/allocatePayment";
+import { isGmailConfigured, sendGmailMessage } from "@/lib/gmail/gmail";
+import { buildReceiptPdfForPayment } from "@/lib/receipts/buildReceiptPdfForPayment";
 import { correnteDueDateForMonth, extraordinariaDefaultDueDate } from "@/lib/billing/dueDates";
 import { splitTotalCentsByPermilages } from "@/lib/billing/splitByPermilage";
 import { parseEurosToCents } from "@/lib/money";
@@ -273,6 +275,30 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
 
     let message = `Pagamento registado. Alocações: ${allocations.length}.`;
     if (remainingCents > 0) message += ` Crédito / sem cobrança para aplicar: ${(remainingCents / 100).toFixed(2)} €`;
+
+    if (process.env.RECEIPT_AUTOSEND_EMAIL !== "false" && isGmailConfigured()) {
+      try {
+        const { pdf, receiptNumber, residentEmail, payerName, unitCode } = await buildReceiptPdfForPayment(
+          supabase,
+          payment.id,
+          cid,
+        );
+        if (residentEmail) {
+          await sendGmailMessage({
+            to: residentEmail,
+            subject: `Recibo ${receiptNumber} — fração ${unitCode}`,
+            text: `Olá ${payerName},\n\nSegue em anexo o recibo do pagamento registado no condomínio.\n\nCumprimentos,\nGestão do condomínio`,
+            pdfFilename: `recibo-${payment.id.slice(0, 8)}.pdf`,
+            pdfBytes: pdf,
+          });
+          message += " Recibo enviado por email (Gmail).";
+        } else {
+          message += " Recibo não enviado por email: o morador da fração não tem email na ficha.";
+        }
+      } catch (mailErr) {
+        message += ` Aviso: envio automático do recibo falhou (${mailErr instanceof Error ? mailErr.message : "erro"}). Podes descarregar o PDF na lista de pagamentos.`;
+      }
+    }
 
     revalidatePath("/admin/contas-correntes");
 

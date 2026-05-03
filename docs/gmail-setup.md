@@ -37,3 +37,9 @@ Quando o endpoint de envio estiver ligado, faz um teste enviando para um email t
 - chega à inbox (ou Spam)
 - PDF abre corretamente
 
+### 5) Envio automático do recibo
+
+Com `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` e `GMAIL_SENDER` definidos (ex.: `ruavincennescondominio@gmail.com`), **cada vez que registas um pagamento** na área Admin, a app gera o PDF e **envia por Gmail** para o email do **primeiro morador activo** da fração (campo `residents.email`). Se não houver email, o pagamento regista-se na mesma e aparece um aviso na mensagem de sucesso.
+
+Para desactivar o envio automático (mantendo o PDF para download): `RECEIPT_AUTOSEND_EMAIL=false` nas variáveis de ambiente.
+

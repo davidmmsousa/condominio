@@ -1,5 +1,14 @@
 import { env } from "@/lib/env";
 
+export function isGmailConfigured(): boolean {
+  return Boolean(
+    env.GMAIL_CLIENT_ID &&
+      env.GMAIL_CLIENT_SECRET &&
+      env.GMAIL_REFRESH_TOKEN &&
+      env.GMAIL_SENDER,
+  );
+}
+
 type GmailToken = {
   access_token: string;
   expires_in: number;
