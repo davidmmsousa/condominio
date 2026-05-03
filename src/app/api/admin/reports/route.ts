@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
   ];
 
   const expensesCsvLines: string[][] = [
-    ["Categoria", "Data", "Valor_EUR", "Fornecedor", "Nota"],
+    ["Rubrica", "Data", "Valor_EUR", "Fornecedor", "Referencia"],
     ...expRows.map((r) => [
       r.expense_categories?.name ?? "",
       r.occurred_on,

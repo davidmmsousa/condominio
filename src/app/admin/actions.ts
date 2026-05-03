@@ -279,3 +279,104 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
     return { error: e instanceof Error ? e.message : "Erro ao registar pagamento." };
   }
 }
+
+export async function createExpenseCategoryAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) throw new Error("Indica o nome da rubrica.");
+    const { error } = await supabase.from("expense_categories").insert({ condominium_id: cid, name });
+    if (error) {
+      if (error.code === "23505") throw new Error("Já existe uma rubrica com esse nome.");
+      throw new Error(error.message);
+    }
+    revalidatePath("/admin/despesas");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao criar rubrica." };
+  }
+}
+
+export async function deleteExpenseCategoryAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) throw new Error("ID em falta.");
+    const { count, error: cErr } = await supabase
+      .from("expenses")
+      .select("*", { count: "exact", head: true })
+      .eq("category_id", id)
+      .eq("condominium_id", cid);
+    if (cErr) throw new Error(cErr.message);
+    if ((count ?? 0) > 0) {
+      throw new Error("Esta rubrica tem despesas associadas. Apaga primeiro as faturas ou recategoriza.");
+    }
+    const { error } = await supabase.from("expense_categories").delete().eq("id", id).eq("condominium_id", cid);
+    if (error) throw new Error(error.message);
+    revalidatePath("/admin/despesas");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao apagar rubrica." };
+  }
+}
+
+export async function createExpenseAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const category_id = String(formData.get("category_id") ?? "").trim();
+    const occurred_on = String(formData.get("occurred_on") ?? "").trim();
+    const reference = String(formData.get("reference") ?? "").trim();
+    const vendor = String(formData.get("vendor") ?? "").trim() || null;
+    const amountRaw = String(formData.get("amount_euros") ?? "").trim();
+
+    if (!category_id) throw new Error("Escolhe a rubrica.");
+    if (!occurred_on) throw new Error("Indica a data da fatura.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(occurred_on)) throw new Error("Data inválida (usa AAAA-MM-DD).");
+    if (!reference) throw new Error("Indica a referência (nº fatura ou documento).");
+
+    const amount_cents = parseEurosToCents(amountRaw);
+    if (amount_cents <= 0) throw new Error("O valor tem de ser maior que zero.");
+
+    const { data: cat, error: catErr } = await supabase
+      .from("expense_categories")
+      .select("id")
+      .eq("id", category_id)
+      .eq("condominium_id", cid)
+      .maybeSingle();
+    if (catErr || !cat) throw new Error("Rubrica inválida ou de outro condomínio.");
+
+    const { error } = await supabase.from("expenses").insert({
+      condominium_id: cid,
+      category_id,
+      occurred_on,
+      amount_cents,
+      vendor,
+      note: reference,
+    });
+    if (error) throw new Error(error.message);
+    revalidatePath("/admin/despesas");
+    revalidatePath("/admin/relatorios");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao registar despesa." };
+  }
+}
+
+export async function deleteExpenseAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) throw new Error("ID em falta.");
+    const { error } = await supabase.from("expenses").delete().eq("id", id).eq("condominium_id", cid);
+    if (error) throw new Error(error.message);
+    revalidatePath("/admin/despesas");
+    revalidatePath("/admin/relatorios");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao apagar despesa." };
+  }
+}

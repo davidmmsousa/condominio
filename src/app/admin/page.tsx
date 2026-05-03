@@ -43,6 +43,10 @@ export default function AdminPage() {
           <strong>Pagamentos</strong>
           <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Alocação automática</div>
         </Link>
+        <Link href="/admin/despesas" style={cardStyle}>
+          <strong>Despesas</strong>
+          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Rubricas e faturas (água, luz, …)</div>
+        </Link>
         <Link href="/admin/relatorios" style={cardStyle}>
           <strong>Relatórios</strong>
           <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>
