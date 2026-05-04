@@ -1,3 +1,4 @@
+import { computeFifoAppliedPerCharge } from "@/lib/billing/fifoApply";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
 
@@ -36,19 +37,24 @@ export default async function MinhaContaPage() {
     .eq("unit_id", unitId)
     .order("due_date", { ascending: true });
 
-  const chargeList = charges ?? [];
-  const chargeIds = chargeList.map((c) => c.id);
-  const appliedByCharge = new Map<string, number>();
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("amount_cents, paid_at")
+    .eq("unit_id", unitId)
+    .order("paid_at", { ascending: true });
 
-  if (chargeIds.length) {
-    const { data: allocs } = await supabase
-      .from("payment_allocations")
-      .select("charge_id, applied_cents")
-      .in("charge_id", chargeIds);
-    for (const a of allocs ?? []) {
-      appliedByCharge.set(a.charge_id, (appliedByCharge.get(a.charge_id) ?? 0) + a.applied_cents);
-    }
-  }
+  const chargeList = charges ?? [];
+  const payRows = payments ?? [];
+
+  const appliedByCharge = computeFifoAppliedPerCharge(
+    chargeList.map((c) => ({
+      id: c.id,
+      amount_cents: c.amount_cents,
+      due_date: c.due_date,
+      kind: c.kind as "corrente" | "extraordinaria",
+    })),
+    payRows.map((p) => ({ amount_cents: p.amount_cents, paid_at: p.paid_at })),
+  );
 
   let openCents = 0;
   const rows = chargeList.map((c) => {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { orderChargesForFifo } from "@/lib/billing/fifoApply";
 
 type ChargeRow = {
   id: string;
@@ -28,7 +29,10 @@ export async function allocatePaymentCurrentFirst(
     return (data ?? []) as ChargeRow[];
   };
 
-  const charges = [...(await fetchByKind("corrente")), ...(await fetchByKind("extraordinaria"))];
+  const charges = orderChargesForFifo([
+    ...(await fetchByKind("corrente")),
+    ...(await fetchByKind("extraordinaria")),
+  ]);
 
   const chargeIds = charges.map((c) => c.id);
   if (chargeIds.length === 0) {
