@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
 
   const { data: payRowsRaw, error: pErr } = await supabase
     .from("payments")
-    .select("paid_at, amount_cents, method, note, units ( code )")
+    .select("paid_at, amount_cents, method, note, received_in, units ( code )")
     .eq("condominium_id", cid)
     .gte("paid_at", paidStartIso)
     .lt("paid_at", paidEndExclusiveIso)
@@ -80,9 +80,13 @@ export async function GET(req: NextRequest) {
 
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
 
+  const { data: unitRowsForExp, error: uexpErr } = await supabase.from("units").select("id, code").eq("condominium_id", cid);
+  if (uexpErr) return NextResponse.json({ error: uexpErr.message }, { status: 500 });
+  const unitCodeById = new Map((unitRowsForExp ?? []).map((u: { id: string; code: string }) => [u.id, u.code]));
+
   const { data: expRowsRaw, error: expErr } = await supabase
     .from("expenses")
-    .select("occurred_on, amount_cents, vendor, note, expense_categories(name)")
+    .select("occurred_on, amount_cents, vendor, note, paid_from, payer_unit_id, expense_categories(name)")
     .eq("condominium_id", cid)
     .gte("occurred_on", `${year}-01-01`)
     .lte("occurred_on", `${year}-12-31`)
@@ -102,7 +106,14 @@ export async function GET(req: NextRequest) {
 
   const chargeRows = (chargeRowsRaw ?? []) as unknown as ChargeR[];
 
-  type PayR = { paid_at: string; amount_cents: number; method: string | null; note: string | null; units: U | null };
+  type PayR = {
+    paid_at: string;
+    amount_cents: number;
+    method: string | null;
+    note: string | null;
+    received_in: string | null;
+    units: U | null;
+  };
   const payRows = (payRowsRaw ?? []) as unknown as PayR[];
 
   type ExpR = {
@@ -110,6 +121,8 @@ export async function GET(req: NextRequest) {
     amount_cents: number;
     vendor: string | null;
     note: string | null;
+    paid_from: string | null;
+    payer_unit_id: string | null;
     expense_categories: { name: string } | null;
   };
   const expRows = (expRowsRaw ?? []) as unknown as ExpR[];
@@ -126,22 +139,25 @@ export async function GET(req: NextRequest) {
   ];
 
   const paymentsCsvLines: string[][] = [
-    ["Fração", "Data_hora_ISO", "Valor_EUR", "Meio", "Nota"],
+    ["Fração", "Data_hora_ISO", "Valor_EUR", "Meio", "Destino_tesoura", "Nota"],
     ...payRows.map((r) => [
       r.units?.code ?? "",
       r.paid_at,
       eurFromCents(r.amount_cents),
       r.method ?? "",
+      r.received_in ?? "",
       r.note ?? "",
     ]),
   ];
 
   const expensesCsvLines: string[][] = [
-    ["Rubrica", "Data", "Valor_EUR", "Fornecedor", "Referencia"],
+    ["Rubrica", "Data", "Valor_EUR", "Origem_pagamento", "Fracao_antecipou", "Fornecedor", "Referencia"],
     ...expRows.map((r) => [
       r.expense_categories?.name ?? "",
       r.occurred_on,
       eurFromCents(r.amount_cents),
+      r.paid_from ?? "",
+      r.payer_unit_id ? (unitCodeById.get(r.payer_unit_id) ?? "") : "",
       r.vendor ?? "",
       r.note ?? "",
     ]),

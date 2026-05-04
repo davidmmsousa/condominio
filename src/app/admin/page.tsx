@@ -43,6 +43,10 @@ export default function AdminPage() {
           <strong>Pagamentos</strong>
           <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Alocação automática</div>
         </Link>
+        <Link href="/admin/fundo-caixa" style={cardStyle}>
+          <strong>Fundo de caixa</strong>
+          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Numerário, banco, prazo e movimentos</div>
+        </Link>
         <Link href="/admin/contas-correntes" style={cardStyle}>
           <strong>Contas correntes</strong>
           <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Extrato por fração</div>

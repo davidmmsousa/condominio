@@ -1,11 +1,15 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { allocatePaymentCurrentFirst } from "@/lib/billing/allocatePayment";
+import { reconcilePaymentAllocationsForUnit } from "@/lib/billing/reconcileUnitAllocations";
 import { isGmailConfigured, sendGmailMessage } from "@/lib/gmail/gmail";
 import { buildReceiptPdfForPayment } from "@/lib/receipts/buildReceiptPdfForPayment";
 import { correnteDueDateForMonth, extraordinariaDefaultDueDate } from "@/lib/billing/dueDates";
 import { splitTotalCentsByPermilages } from "@/lib/billing/splitByPermilage";
 import { parseEurosToCents } from "@/lib/money";
+import { getTreasuryAccountId } from "@/lib/treasury/resolveAccount";
+import type { ExpenseFunding, TreasuryBookKind } from "@/lib/treasury/types";
 import { env } from "@/lib/env";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient, createServiceSupabaseClient } from "@/lib/supabase/server-client";
@@ -26,6 +30,16 @@ async function requireAdmin() {
 
 async function singletonCondoId(supabase: Awaited<ReturnType<typeof createServerRouteSupabaseClient>>) {
   return ensureSingletonCondominiumId(supabase);
+}
+
+function parseTreasuryBookKind(v: string): TreasuryBookKind | null {
+  if (v === "numerario" || v === "conta_ordem" || v === "conta_prazo") return v;
+  return null;
+}
+
+function parseExpenseFunding(v: string): ExpenseFunding | null {
+  if (v === "numerario" || v === "conta_ordem" || v === "conta_prazo" || v === "morador") return v;
+  return null;
 }
 
 /** Atualiza `profiles` do utilizador Auth com o mesmo email (morador). */
@@ -194,6 +208,82 @@ export async function deleteResidentAction(_prev: ActionState | null, formData: 
   }
 }
 
+export async function reconcileUnitAllocationsAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const unit_id = String(formData.get("unit_id") ?? "").trim();
+    if (!unit_id) throw new Error("Fração em falta.");
+
+    const { data: unit, error: ue } = await supabase
+      .from("units")
+      .select("id")
+      .eq("id", unit_id)
+      .eq("condominium_id", cid)
+      .maybeSingle();
+    if (ue) throw new Error(ue.message);
+    if (!unit) throw new Error("Fração inválida.");
+
+    const result = await reconcilePaymentAllocationsForUnit(supabase, { condominiumId: cid, unitId: unit_id });
+
+    revalidatePath(`/admin/contas-correntes/${unit_id}`);
+    revalidatePath("/admin/contas-correntes");
+    revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/fundo-caixa");
+    revalidatePath("/minha-conta");
+
+    let message = `Reconciliado: ${result.paymentsProcessed} pagamento(s), ${result.allocationsCreated} alocação(ões).`;
+    if (result.remainingTotalCents > 0) {
+      message += ` Excesso sem cobrança: ${(result.remainingTotalCents / 100).toFixed(2)} €.`;
+    }
+    return { ok: true, message };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro na reconciliação." };
+  }
+}
+
+export async function reconcileAllUnitsAllocationsAction(
+  _prev: ActionState | null,
+  _formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+
+    const { data: units, error: uerr } = await supabase
+      .from("units")
+      .select("id, code")
+      .eq("condominium_id", cid)
+      .order("code");
+    if (uerr) throw new Error(uerr.message);
+
+    let totalPayments = 0;
+    let totalAllocs = 0;
+    let totalRemain = 0;
+
+    for (const u of units ?? []) {
+      const r = await reconcilePaymentAllocationsForUnit(supabase, { condominiumId: cid, unitId: u.id });
+      totalPayments += r.paymentsProcessed;
+      totalAllocs += r.allocationsCreated;
+      totalRemain += r.remainingTotalCents;
+      revalidatePath(`/admin/contas-correntes/${u.id}`);
+    }
+
+    revalidatePath("/admin/contas-correntes");
+    revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/fundo-caixa");
+    revalidatePath("/minha-conta");
+
+    let message = `Todas as frações: ${units?.length ?? 0} unidade(s), ${totalPayments} pagamento(s), ${totalAllocs} alocação(ões).`;
+    if (totalRemain > 0) {
+      message += ` Total em excesso: ${(totalRemain / 100).toFixed(2)} €.`;
+    }
+    return { ok: true, message };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro na reconciliação global." };
+  }
+}
+
 function firstDayOfMonthFromInput(yyyyMm: string): Date {
   const [y, m] = yyyyMm.split("-").map(Number);
   if (!y || !m || m < 1 || m > 12) throw new Error("Mês de referência inválido.");
@@ -322,6 +412,8 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
     const paid_at_raw = String(formData.get("paid_at") ?? "");
     const method = String(formData.get("method") ?? "").trim() || null;
     const note = String(formData.get("note") ?? "").trim() || null;
+    const received_in =
+      parseTreasuryBookKind(String(formData.get("received_in") ?? "").trim()) ?? ("conta_ordem" as TreasuryBookKind);
 
     if (!unit_id) throw new Error("Escolhe a fração.");
     if (euros <= 0) throw new Error("Valor deve ser maior que zero.");
@@ -345,11 +437,23 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
         method,
         note,
         created_by: user.id,
+        received_in,
       })
       .select("id")
       .single();
 
     if (pErr || !payment) throw new Error(pErr?.message ?? "Erro ao registar pagamento.");
+
+    const treasuryAccountId = await getTreasuryAccountId(supabase, cid, received_in);
+    const { error: tmErr } = await supabase.from("treasury_movements").insert({
+      condominium_id: cid,
+      treasury_account_id: treasuryAccountId,
+      occurred_at: paid_at,
+      amount_cents: euros,
+      memo: "Entrada — pagamento de fração",
+      payment_id: payment.id,
+    });
+    if (tmErr) throw new Error(tmErr.message);
 
     const { remainingCents, allocations } = await allocatePaymentCurrentFirst(supabase, {
       paymentId: payment.id,
@@ -389,6 +493,7 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
     }
 
     revalidatePath("/admin/contas-correntes");
+    revalidatePath("/admin/fundo-caixa");
 
     return { ok: true, message, paymentId: payment.id };
   } catch (e) {
@@ -440,13 +545,16 @@ export async function deleteExpenseCategoryAction(_prev: ActionState | null, for
 
 export async function createExpenseAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   try {
-    const { supabase } = await requireAdmin();
+    const { supabase, user } = await requireAdmin();
     const cid = await singletonCondoId(supabase);
     const category_id = String(formData.get("category_id") ?? "").trim();
     const occurred_on = String(formData.get("occurred_on") ?? "").trim();
     const reference = String(formData.get("reference") ?? "").trim();
     const vendor = String(formData.get("vendor") ?? "").trim() || null;
     const amountRaw = String(formData.get("amount_euros") ?? "").trim();
+    const paid_from =
+      parseExpenseFunding(String(formData.get("paid_from") ?? "").trim()) ?? ("conta_ordem" as ExpenseFunding);
+    const payer_unit_id_raw = String(formData.get("payer_unit_id") ?? "").trim();
 
     if (!category_id) throw new Error("Escolhe a rubrica.");
     if (!occurred_on) throw new Error("Indica a data da fatura.");
@@ -456,6 +564,10 @@ export async function createExpenseAction(_prev: ActionState | null, formData: F
     const amount_cents = parseEurosToCents(amountRaw);
     if (amount_cents <= 0) throw new Error("O valor tem de ser maior que zero.");
 
+    if (paid_from === "morador" && !payer_unit_id_raw) {
+      throw new Error("Indica a fração que suportou o custo (encontro de contas na conta corrente).");
+    }
+
     const { data: cat, error: catErr } = await supabase
       .from("expense_categories")
       .select("id")
@@ -464,17 +576,92 @@ export async function createExpenseAction(_prev: ActionState | null, formData: F
       .maybeSingle();
     if (catErr || !cat) throw new Error("Rubrica inválida ou de outro condomínio.");
 
-    const { error } = await supabase.from("expenses").insert({
-      condominium_id: cid,
-      category_id,
-      occurred_on,
-      amount_cents,
-      vendor,
-      note: reference,
-    });
-    if (error) throw new Error(error.message);
+    let payer_unit_id: string | null = null;
+    if (paid_from === "morador") {
+      const { data: urow, error: uerr } = await supabase
+        .from("units")
+        .select("id")
+        .eq("id", payer_unit_id_raw)
+        .eq("condominium_id", cid)
+        .maybeSingle();
+      if (uerr || !urow) throw new Error("Fração inválida para antecipação.");
+      payer_unit_id = urow.id;
+    }
+
+    const { data: expense, error: expErr } = await supabase
+      .from("expenses")
+      .insert({
+        condominium_id: cid,
+        category_id,
+        occurred_on,
+        amount_cents,
+        vendor,
+        note: reference,
+        paid_from,
+        payer_unit_id,
+      })
+      .select("id")
+      .single();
+
+    if (expErr || !expense) throw new Error(expErr?.message ?? "Erro ao registar despesa.");
+
+    const paidAtIso = `${occurred_on}T12:00:00.000Z`;
+
+    if (paid_from === "morador" && payer_unit_id) {
+      const { data: payment, error: pErr } = await supabase
+        .from("payments")
+        .insert({
+          condominium_id: cid,
+          unit_id: payer_unit_id,
+          paid_at: paidAtIso,
+          amount_cents,
+          method: "Antecipação (despesa)",
+          note: `Despesa: ${reference}`,
+          created_by: user.id,
+          received_in: null,
+        })
+        .select("id")
+        .single();
+
+      if (pErr || !payment) throw new Error(pErr?.message ?? "Erro ao criar acerto na conta corrente.");
+
+      const { error: upErr } = await supabase
+        .from("expenses")
+        .update({ imputed_payment_id: payment.id })
+        .eq("id", expense.id);
+      if (upErr) throw new Error(upErr.message);
+
+      try {
+        await allocatePaymentCurrentFirst(supabase, {
+          paymentId: payment.id,
+          condominiumId: cid,
+          unitId: payer_unit_id,
+          amountCents: amount_cents,
+        });
+      } catch (allocEx) {
+        await supabase.from("payments").delete().eq("id", payment.id);
+        await supabase.from("expenses").delete().eq("id", expense.id);
+        throw allocEx;
+      }
+    } else if (paid_from === "numerario" || paid_from === "conta_ordem" || paid_from === "conta_prazo") {
+      const treasuryAccountId = await getTreasuryAccountId(supabase, cid, paid_from);
+      const { error: tmErr } = await supabase.from("treasury_movements").insert({
+        condominium_id: cid,
+        treasury_account_id: treasuryAccountId,
+        occurred_at: paidAtIso,
+        amount_cents: -amount_cents,
+        memo: `Despesa: ${reference}`,
+        expense_id: expense.id,
+      });
+      if (tmErr) throw new Error(tmErr.message);
+    }
+
     revalidatePath("/admin/despesas");
     revalidatePath("/admin/relatorios");
+    revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/contas-correntes");
+    revalidatePath("/admin/fundo-caixa");
+    revalidatePath("/minha-conta");
     return { ok: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao registar despesa." };
@@ -487,12 +674,119 @@ export async function deleteExpenseAction(_prev: ActionState | null, formData: F
     const cid = await singletonCondoId(supabase);
     const id = String(formData.get("id") ?? "").trim();
     if (!id) throw new Error("ID em falta.");
+
+    const { data: row, error: fe } = await supabase
+      .from("expenses")
+      .select("imputed_payment_id")
+      .eq("id", id)
+      .eq("condominium_id", cid)
+      .maybeSingle();
+    if (fe) throw new Error(fe.message);
+
+    if (row?.imputed_payment_id) {
+      const { error: pdErr } = await supabase.from("payments").delete().eq("id", row.imputed_payment_id);
+      if (pdErr) throw new Error(pdErr.message);
+    }
+
     const { error } = await supabase.from("expenses").delete().eq("id", id).eq("condominium_id", cid);
     if (error) throw new Error(error.message);
     revalidatePath("/admin/despesas");
     revalidatePath("/admin/relatorios");
+    revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/contas-correntes");
+    revalidatePath("/admin/fundo-caixa");
+    revalidatePath("/minha-conta");
     return { ok: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao apagar despesa." };
+  }
+}
+
+export async function createTreasuryTransferAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const from_kind = parseTreasuryBookKind(String(formData.get("from_kind") ?? "").trim());
+    const to_kind = parseTreasuryBookKind(String(formData.get("to_kind") ?? "").trim());
+    const euros = parseEurosToCents(String(formData.get("euros") ?? ""));
+    const memo = String(formData.get("memo") ?? "").trim() || "Transferência interna";
+    const occurred_raw = String(formData.get("occurred_at") ?? "").trim();
+
+    if (!from_kind || !to_kind) throw new Error("Indica origem e destino.");
+    if (from_kind === to_kind) throw new Error("Origem e destino têm de ser diferentes.");
+    if (euros <= 0) throw new Error("O valor tem de ser maior que zero.");
+
+    let occurred_at: string;
+    if (occurred_raw) {
+      const d = new Date(occurred_raw);
+      if (Number.isNaN(d.getTime())) throw new Error("Data/hora inválida.");
+      occurred_at = d.toISOString();
+    } else {
+      occurred_at = new Date().toISOString();
+    }
+
+    const fromId = await getTreasuryAccountId(supabase, cid, from_kind);
+    const toId = await getTreasuryAccountId(supabase, cid, to_kind);
+    const transfer_group_id = randomUUID();
+
+    const { error: insErr } = await supabase.from("treasury_movements").insert([
+      {
+        condominium_id: cid,
+        treasury_account_id: fromId,
+        occurred_at,
+        amount_cents: -euros,
+        memo,
+        transfer_group_id,
+      },
+      {
+        condominium_id: cid,
+        treasury_account_id: toId,
+        occurred_at,
+        amount_cents: euros,
+        memo,
+        transfer_group_id,
+      },
+    ]);
+    if (insErr) throw new Error(insErr.message);
+
+    revalidatePath("/admin/fundo-caixa");
+    return { ok: true, message: "Transferência registada." };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao transferir." };
+  }
+}
+
+export async function createTreasuryAdjustmentAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const kind = parseTreasuryBookKind(String(formData.get("kind") ?? "").trim());
+    const direction = String(formData.get("direction") ?? "").trim();
+    const euros = parseEurosToCents(String(formData.get("euros") ?? ""));
+    const memo = String(formData.get("memo") ?? "").trim() || "Ajuste de saldo";
+    const occurred_on = String(formData.get("occurred_on") ?? "").trim();
+
+    if (!kind) throw new Error("Indica a conta.");
+    if (direction !== "entrada" && direction !== "saida") throw new Error("Indica entrada ou saída.");
+    if (euros <= 0) throw new Error("O valor tem de ser maior que zero.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(occurred_on)) throw new Error("Data inválida (AAAA-MM-DD).");
+
+    const accId = await getTreasuryAccountId(supabase, cid, kind);
+    const sign = direction === "entrada" ? 1 : -1;
+    const occurred_at = `${occurred_on}T12:00:00.000Z`;
+
+    const { error: insErr } = await supabase.from("treasury_movements").insert({
+      condominium_id: cid,
+      treasury_account_id: accId,
+      occurred_at,
+      amount_cents: sign * euros,
+      memo,
+    });
+    if (insErr) throw new Error(insErr.message);
+
+    revalidatePath("/admin/fundo-caixa");
+    return { ok: true, message: "Ajuste registado." };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro no ajuste." };
   }
 }

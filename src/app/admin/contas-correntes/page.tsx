@@ -1,3 +1,4 @@
+import { ReconcileAllAllocationsButton } from "@/app/admin/contas-correntes/ReconcileAllAllocationsButton";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import Link from "next/link";
 
@@ -13,6 +14,7 @@ export default async function ContasCorrentesIndexPage() {
         pagamentos são os valores que entraram na conta do condomínio; a alocação às quotas é feita automaticamente na
         página de Pagamentos.
       </p>
+      <ReconcileAllAllocationsButton />
       {!units?.length ? (
         <p style={{ color: "#64748b" }}>Ainda não há frações. Cria frações em Admin → Frações.</p>
       ) : (

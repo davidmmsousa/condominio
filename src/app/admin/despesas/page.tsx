@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
 import { CreateCategoryForm } from "./CreateCategoryForm";
+import { EXPENSE_FUNDING_LABELS, type ExpenseFunding } from "@/lib/treasury/types";
 import { CreateExpenseForm } from "./CreateExpenseForm";
 import { DeleteCategoryButton } from "./DeleteCategoryButton";
 import { DeleteExpenseButton } from "./DeleteExpenseButton";
@@ -8,10 +10,11 @@ import { DeleteExpenseButton } from "./DeleteExpenseButton";
 export default async function DespesasAdminPage() {
   const supabase = await createServerRouteSupabaseClient();
   const { data: categories } = await supabase.from("expense_categories").select("id, name").order("name");
+  const { data: units } = await supabase.from("units").select("id, code").order("code");
 
   const { data: expenses } = await supabase
     .from("expenses")
-    .select("id, occurred_on, amount_cents, vendor, note, expense_categories ( name )")
+    .select("id, occurred_on, amount_cents, vendor, note, paid_from, payer_unit_id, expense_categories ( name )")
     .order("occurred_on", { ascending: false })
     .limit(100);
 
@@ -21,18 +24,23 @@ export default async function DespesasAdminPage() {
     amount_cents: number;
     vendor: string | null;
     note: string | null;
+    paid_from: string | null;
+    payer_unit_id: string | null;
     expense_categories: { name: string } | null;
   };
 
   const expenseRows = (expenses ?? []) as unknown as ERow[];
+  const unitCodeById = new Map((units ?? []).map((u) => [u.id, u.code]));
 
   return (
     <main style={{ paddingTop: 24 }}>
       <h1 style={{ marginTop: 0 }}>Despesas e rubricas</h1>
       <p style={{ color: "#555", maxWidth: 720, lineHeight: 1.55 }}>
         As <strong>rubricas</strong> classificam custos (água, electricidade, elevador, limpeza, …). Cada{" "}
-        <strong>fatura</strong> fica com referência, data, valor e rubrica; o fornecedor é opcional. Os dados entram
-        nos relatórios CSV de despesas.
+        <strong>fatura</strong> fica com referência, data, valor e rubrica; indica se o custo saiu do{" "}
+        <strong>numerário</strong>, da <strong>conta à ordem</strong>, da <strong>conta a prazo</strong> ou se foi{" "}
+        <strong>pago por um morador</strong> (gera acerto na conta corrente dessa fração). Os dados entram nos relatórios
+        CSV e no <Link href="/admin/fundo-caixa">fundo de caixa</Link>.
       </p>
 
       <section
@@ -73,7 +81,7 @@ export default async function DespesasAdminPage() {
 
       <section style={{ marginTop: 32, maxWidth: 720 }}>
         <h2 style={{ fontSize: 18 }}>Registar fatura / despesa</h2>
-        <CreateExpenseForm categories={categories ?? []} />
+        <CreateExpenseForm categories={categories ?? []} units={units ?? []} />
       </section>
 
       <section style={{ marginTop: 40 }}>
@@ -87,6 +95,7 @@ export default async function DespesasAdminPage() {
                 <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
                   <th style={{ padding: "8px 6px" }}>Data</th>
                   <th style={{ padding: "8px 6px" }}>Rubrica</th>
+                  <th style={{ padding: "8px 6px" }}>Origem</th>
                   <th style={{ padding: "8px 6px" }}>Referência</th>
                   <th style={{ padding: "8px 6px" }}>Fornecedor</th>
                   <th style={{ padding: "8px 6px" }}>Valor</th>
@@ -98,6 +107,15 @@ export default async function DespesasAdminPage() {
                   <tr key={r.id} style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>{r.occurred_on}</td>
                     <td style={{ padding: "8px 6px" }}>{r.expense_categories?.name ?? "—"}</td>
+                    <td style={{ padding: "8px 6px", fontSize: 13, color: "#444" }}>
+                      {!r.paid_from
+                        ? "—"
+                        : `${EXPENSE_FUNDING_LABELS[r.paid_from as ExpenseFunding] ?? r.paid_from}${
+                            r.paid_from === "morador" && r.payer_unit_id
+                              ? ` · ${unitCodeById.get(r.payer_unit_id) ?? "?"}`
+                              : ""
+                          }`}
+                    </td>
                     <td style={{ padding: "8px 6px", color: "#333" }}>{r.note ?? "—"}</td>
                     <td style={{ padding: "8px 6px", color: "#555" }}>{r.vendor ?? "—"}</td>
                     <td style={{ padding: "8px 6px" }}>{formatCents(r.amount_cents)}</td>

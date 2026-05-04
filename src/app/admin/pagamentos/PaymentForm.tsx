@@ -1,6 +1,7 @@
 "use client";
 
 import { createPaymentAction, type ActionState } from "@/app/admin/actions";
+import { TREASURY_BOOK_LABELS, type TreasuryBookKind } from "@/lib/treasury/types";
 import { useActionState } from "react";
 
 const inp = {
@@ -12,6 +13,8 @@ const inp = {
   maxWidth: 400,
   boxSizing: "border-box" as const,
 };
+
+const treasuryKinds: TreasuryBookKind[] = ["numerario", "conta_ordem", "conta_prazo"];
 
 export function PaymentForm({ units }: { units: Array<{ id: string; code: string }> }) {
   const [state, action, pending] = useActionState<ActionState | null, FormData>(
@@ -49,8 +52,18 @@ export function PaymentForm({ units }: { units: Array<{ id: string; code: string
         <input name="paid_at" type="datetime-local" disabled={pending} style={inp} defaultValue={defaultDt} />
       </label>
       <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
+        Onde entrou o valor (tesouraria)
+        <select name="received_in" required disabled={pending} style={inp} defaultValue="conta_ordem">
+          {treasuryKinds.map((k) => (
+            <option key={k} value={k}>
+              {TREASURY_BOOK_LABELS[k]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
         Meio (opcional)
-        <input name="method" placeholder="Transferência MB, MB Way…" disabled={pending} style={inp} />
+        <input name="method" placeholder="Numerário, transferência MB, MB Way…" disabled={pending} style={inp} />
       </label>
       <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
         Nota (opcional)

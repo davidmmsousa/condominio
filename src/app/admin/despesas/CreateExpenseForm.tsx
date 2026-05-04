@@ -1,7 +1,8 @@
 "use client";
 
 import { createExpenseAction, type ActionState } from "@/app/admin/actions";
-import { useActionState } from "react";
+import { EXPENSE_FUNDING_LABELS, type ExpenseFunding } from "@/lib/treasury/types";
+import { useActionState, useState } from "react";
 
 const inp = {
   padding: "10px 12px",
@@ -13,12 +14,17 @@ const inp = {
   boxSizing: "border-box" as const,
 };
 
+const fundingKeys = Object.keys(EXPENSE_FUNDING_LABELS) as ExpenseFunding[];
+
 export function CreateExpenseForm({
   categories,
+  units,
 }: {
   categories: { id: string; name: string }[];
+  units: Array<{ id: string; code: string }>;
 }) {
   const [state, action, pending] = useActionState<ActionState | null, FormData>(createExpenseAction, null);
+  const [paidFrom, setPaidFrom] = useState<ExpenseFunding>("conta_ordem");
   const disabled = pending || categories.length === 0;
 
   return (
@@ -54,6 +60,36 @@ export function CreateExpenseForm({
           style={inp}
         />
       </label>
+      <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
+        Quem suportou o custo
+        <select
+          name="paid_from"
+          required
+          disabled={disabled}
+          style={inp}
+          value={paidFrom}
+          onChange={(e) => setPaidFrom(e.target.value as ExpenseFunding)}
+        >
+          {fundingKeys.map((k) => (
+            <option key={k} value={k}>
+              {EXPENSE_FUNDING_LABELS[k]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {paidFrom === "morador" ? (
+        <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
+          Fração (encontro de contas na conta corrente)
+          <select name="payer_unit_id" required disabled={disabled || units.length === 0} style={inp}>
+            <option value="">— escolher —</option>
+            {units.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.code}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
         Fornecedor (opcional)
         <input name="vendor" disabled={disabled} placeholder="Ex.: EDP, Águas do Porto" style={inp} />

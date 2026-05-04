@@ -1,3 +1,4 @@
+import { ReconcileUnitAllocationsButton } from "@/app/admin/contas-correntes/ReconcileUnitAllocationsButton";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
 import Link from "next/link";
@@ -118,6 +119,7 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
       <p style={{ color: "#555", maxWidth: 720 }}>
         Saldo devedor positivo = o condómino deve ao condomínio (no total das cobranças vs. pagamentos registados).
       </p>
+      <ReconcileUnitAllocationsButton unitId={unit.id} />
 
       <section
         style={{
