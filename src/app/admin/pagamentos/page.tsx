@@ -1,5 +1,6 @@
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
+import Link from "next/link";
 import { PaymentForm } from "./PaymentForm";
 import { ResendReceiptEmailButton } from "./ResendReceiptEmailButton";
 
@@ -26,6 +27,14 @@ export default async function PagamentosAdminPage() {
   return (
     <main style={{ paddingTop: 24 }}>
       <h1 style={{ marginTop: 0 }}>Pagamentos</h1>
+      <p style={{ marginTop: 4, marginBottom: 20 }}>
+        <Link href="/admin/pagamentos/tabela-geral" style={{ fontSize: 15, fontWeight: 600, color: "#1d4ed8" }}>
+          Tabela Geral
+        </Link>
+        <span style={{ color: "#64748b", fontSize: 14, marginLeft: 10 }}>
+          — visão mensal por fração (quotas correntes pagas)
+        </span>
+      </p>
       <PaymentForm units={units ?? []} />
       <h2 style={{ fontSize: 18, marginTop: 40 }}>Últimos pagamentos</h2>
       {!list.length ? (

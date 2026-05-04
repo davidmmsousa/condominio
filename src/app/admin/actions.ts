@@ -229,6 +229,7 @@ export async function reconcileUnitAllocationsAction(_prev: ActionState | null, 
     revalidatePath(`/admin/contas-correntes/${unit_id}`);
     revalidatePath("/admin/contas-correntes");
     revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/pagamentos/tabela-geral");
     revalidatePath("/admin/fundo-caixa");
     revalidatePath("/minha-conta");
 
@@ -271,6 +272,7 @@ export async function reconcileAllUnitsAllocationsAction(
 
     revalidatePath("/admin/contas-correntes");
     revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/pagamentos/tabela-geral");
     revalidatePath("/admin/fundo-caixa");
     revalidatePath("/minha-conta");
 
@@ -343,6 +345,7 @@ export async function createManualChargeAction(_prev: ActionState | null, formDa
     });
     if (error) throw new Error(error.message);
     revalidatePath("/admin/cobrancas");
+    if (kind === "corrente") revalidatePath("/admin/pagamentos/tabela-geral");
     return { ok: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao registar cobrança." };
@@ -396,6 +399,7 @@ export async function generateMonthlyQuotasAction(_prev: ActionState | null, for
       throw new Error(insErr.message);
     }
     revalidatePath("/admin/cobrancas");
+    revalidatePath("/admin/pagamentos/tabela-geral");
     return { ok: true, message: `Geradas ${rows.length} quotas para ${reference_month.slice(0, 7)}.` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao gerar quotas." };
@@ -463,6 +467,7 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
     });
 
     revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/pagamentos/tabela-geral");
     revalidatePath("/admin/cobrancas");
 
     let message = `Pagamento registado. Alocações: ${allocations.length}.`;
@@ -659,6 +664,7 @@ export async function createExpenseAction(_prev: ActionState | null, formData: F
     revalidatePath("/admin/despesas");
     revalidatePath("/admin/relatorios");
     revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/pagamentos/tabela-geral");
     revalidatePath("/admin/contas-correntes");
     revalidatePath("/admin/fundo-caixa");
     revalidatePath("/minha-conta");
@@ -693,6 +699,7 @@ export async function deleteExpenseAction(_prev: ActionState | null, formData: F
     revalidatePath("/admin/despesas");
     revalidatePath("/admin/relatorios");
     revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/pagamentos/tabela-geral");
     revalidatePath("/admin/contas-correntes");
     revalidatePath("/admin/fundo-caixa");
     revalidatePath("/minha-conta");
