@@ -51,6 +51,22 @@ function toBase64Url(input: string) {
     .replace(/=+$/g, "");
 }
 
+/** RFC 2047 encoded-word (UTF-8 Base64) for MIME headers. Raw UTF-8 in Subject often becomes mojibake. */
+function encodeRfc2047HeaderValue(value: string): string {
+  if (/^[\x20-\x7E]*$/.test(value)) return value;
+
+  const prefix = "=?UTF-8?B?";
+  const suffix = "?=";
+  const maxWordLen = 75;
+  const maxB64Chunk = maxWordLen - prefix.length - suffix.length;
+  const b64 = Buffer.from(value, "utf8").toString("base64");
+  const chunks: string[] = [];
+  for (let i = 0; i < b64.length; i += maxB64Chunk) {
+    chunks.push(`${prefix}${b64.slice(i, i + maxB64Chunk)}${suffix}`);
+  }
+  return chunks.join(" ");
+}
+
 export type SendGmailMessageArgs = {
   to: string;
   subject: string;
@@ -69,7 +85,7 @@ export async function sendGmailMessage(args: SendGmailMessageArgs): Promise<{ id
   const headers = [
     `From: ${from}`,
     `To: ${args.to}`,
-    `Subject: ${args.subject}`,
+    `Subject: ${encodeRfc2047HeaderValue(args.subject)}`,
     "MIME-Version: 1.0",
   ];
 
