@@ -57,6 +57,9 @@ export function VoidPaymentRowForm(props: {
         {pending ? "A anular…" : "Anular pagamento"}
       </button>
       {state?.error ? <span style={{ color: "#b00020", fontSize: 12 }}>{state.error}</span> : null}
+      {state?.ok && state.message ? (
+        <span style={{ color: "#047857", fontSize: 12, lineHeight: 1.4 }}>{state.message}</span>
+      ) : null}
     </form>
   );
 }
