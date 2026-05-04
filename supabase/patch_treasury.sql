@@ -51,8 +51,12 @@ alter table public.expenses
 alter table public.payments
   add column if not exists received_in public.treasury_book_kind;
 
--- Pagamentos antigos: assumir entrada na conta à ordem (transferências habituais).
-update public.payments set received_in = 'conta_ordem' where received_in is null;
+-- Pagamentos antigos com entrada real na tesoura: assumir conta à ordem.
+-- Não tocar em pagamentos só de acerto morador (sem entrada de numerário/banco).
+update public.payments
+set received_in = 'conta_ordem'
+where received_in is null
+  and coalesce(method, '') not ilike '%Antecipação (despesa)%';
 
 -- Despesas antigas já têm default conta_ordem na coluna.
 
