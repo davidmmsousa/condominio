@@ -1,53 +1,35 @@
-import Link from "next/link";
-import type { CSSProperties } from "react";
+"use client";
 
-const linkStyle: CSSProperties = {
-  color: "#333",
-  textDecoration: "none",
-  padding: "6px 10px",
-  borderRadius: 6,
-  fontSize: 14,
-};
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const items: { href: string; label: string; exact?: boolean }[] = [
+  { href: "/admin", label: "Início admin", exact: true },
+  { href: "/admin/unidades", label: "Frações" },
+  { href: "/admin/moradores", label: "Moradores" },
+  { href: "/admin/cobrancas", label: "Cobranças" },
+  { href: "/admin/pagamentos", label: "Pagamentos" },
+  { href: "/admin/fundo-caixa", label: "Fundo de caixa" },
+  { href: "/admin/contas-correntes", label: "Contas correntes" },
+  { href: "/admin/despesas", label: "Despesas" },
+  { href: "/admin/relatorios", label: "Relatórios" },
+];
+
+function linkActive(pathname: string, href: string, exact?: boolean) {
+  if (exact) return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AdminSubNav() {
+  const pathname = usePathname() ?? "";
+
   return (
-    <nav
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 8,
-        padding: "12px 24px",
-        borderBottom: "1px solid #e5e5e5",
-        background: "#fafafa",
-      }}
-    >
-      <Link href="/admin" style={linkStyle}>
-        Início admin
-      </Link>
-      <Link href="/admin/unidades" style={linkStyle}>
-        Frações
-      </Link>
-      <Link href="/admin/moradores" style={linkStyle}>
-        Moradores
-      </Link>
-      <Link href="/admin/cobrancas" style={linkStyle}>
-        Cobranças
-      </Link>
-      <Link href="/admin/pagamentos" style={linkStyle}>
-        Pagamentos
-      </Link>
-      <Link href="/admin/fundo-caixa" style={linkStyle}>
-        Fundo de caixa
-      </Link>
-      <Link href="/admin/contas-correntes" style={linkStyle}>
-        Contas correntes
-      </Link>
-      <Link href="/admin/despesas" style={linkStyle}>
-        Despesas
-      </Link>
-      <Link href="/admin/relatorios" style={linkStyle}>
-        Relatórios
-      </Link>
+    <nav className="admin-nav" aria-label="Secções de administração">
+      {items.map(({ href, label, exact }) => (
+        <Link key={href} href={href} className={linkActive(pathname, href, exact) ? "is-active" : undefined}>
+          {label}
+        </Link>
+      ))}
     </nav>
   );
 }

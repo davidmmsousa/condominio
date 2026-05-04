@@ -11,35 +11,38 @@ export default async function HomePage() {
     : { data: null };
 
   return (
-    <main style={{ padding: 24, maxWidth: 900 }}>
-      <h1>Gestão do Condomínio</h1>
-      <p>
-        MVP: admin (quotas, pagamentos, recibos) + portal morador (consulta).
-      </p>
+    <main className="page-shell page-shell--compact">
+      <h1 className="page-title">Gestão do Condomínio</h1>
+      <p className="page-lead">MVP: admin (quotas, pagamentos, recibos) + portal morador (consulta).</p>
       {user && profile?.role === "admin" ? (
         <p>
-          <Link href="/admin">Ir para admin →</Link>
+          <Link href="/admin" className="text-link">
+            Ir para admin →
+          </Link>
         </p>
       ) : null}
       {user && profile?.role === "resident" ? (
         <p>
-          <Link href="/minha-conta">Ir para minha conta →</Link>
+          <Link href="/minha-conta" className="text-link">
+            Ir para minha conta →
+          </Link>
         </p>
       ) : null}
       {!user ? (
         <p>
-          <Link href="/entrar">Entrar →</Link>
+          <Link href="/entrar" className="text-link">
+            Entrar →
+          </Link>
         </p>
       ) : null}
-      <ul style={{ marginTop: 16 }}>
+      <ul className="home-actions">
         <li>
-          <Link href="/admin">/admin</Link> (só administrador)
+          <Link href="/admin">/admin — Painel administrador</Link>
         </li>
         <li>
-          <Link href="/minha-conta">/minha-conta</Link> (só morador)
+          <Link href="/minha-conta">/minha-conta — Portal do morador</Link>
         </li>
       </ul>
     </main>
   );
 }
-

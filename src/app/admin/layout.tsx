@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <>
       <AdminSubNav />
-      <div style={{ padding: "0 24px 48px", maxWidth: 1100, margin: "0 auto" }}>{children}</div>
+      <div className="admin-layout-content">{children}</div>
     </>
   );
 }

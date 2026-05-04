@@ -11,6 +11,7 @@ export function LogoutButton({ label = "Sair" }: { label?: string }) {
   return (
     <button
       type="button"
+      className="btn"
       disabled={busy}
       onClick={async () => {
         setBusy(true);
@@ -18,14 +19,6 @@ export function LogoutButton({ label = "Sair" }: { label?: string }) {
         await supabase.auth.signOut();
         router.push("/entrar");
         router.refresh();
-      }}
-      style={{
-        padding: "8px 14px",
-        borderRadius: 8,
-        border: "1px solid #ccc",
-        background: "#fff",
-        cursor: busy ? "not-allowed" : "pointer",
-        fontSize: 14,
       }}
     >
       {busy ? "A sair…" : label}

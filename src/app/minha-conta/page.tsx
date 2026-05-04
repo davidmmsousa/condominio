@@ -20,12 +20,12 @@ export default async function MinhaContaPage() {
 
   if (!unitId) {
     return (
-      <main style={{ padding: 24, maxWidth: 720 }}>
-        <h1 style={{ marginTop: 0 }}>Minha conta</h1>
-        <p style={{ color: "#555" }}>
-          O portal usa a fração em <code>profiles.unit_id</code> (conta com que entras), não só a ficha em
-          Moradores. Pede ao administrador para premir <strong>Ligar ao portal</strong> na tua linha em Admin →
-          Moradores (ou editar <code>profiles</code> no Supabase).
+      <main className="page-shell page-shell--narrow">
+        <h1 className="page-title">Minha conta</h1>
+        <p className="page-lead">
+          O portal usa a fração em <code>profiles.unit_id</code> (conta com que entras), não só a ficha em Moradores.
+          Pede ao administrador para premir <strong>Ligar ao portal</strong> na tua linha em Admin → Moradores (ou editar{" "}
+          <code>profiles</code> no Supabase).
         </p>
       </main>
     );
@@ -65,34 +65,34 @@ export default async function MinhaContaPage() {
   });
 
   return (
-    <main style={{ padding: 24, maxWidth: 900 }}>
-      <h1 style={{ marginTop: 0 }}>Minha conta</h1>
-      <p style={{ color: "#555" }}>
+    <main className="page-shell page-shell--compact">
+      <h1 className="page-title">Minha conta</h1>
+      <p className="page-lead">
         Fração <strong>{unitCode ?? "—"}</strong>. Saldo estimado em dívida nas cobranças listadas abaixo:{" "}
         <strong>{formatCents(openCents)}</strong>.
       </p>
       {!rows.length ? (
-        <p style={{ marginTop: 16 }}>Sem cobranças registadas para a tua fração.</p>
+        <p>Sem cobranças registadas para a tua fração.</p>
       ) : (
-        <div style={{ overflowX: "auto", marginTop: 16 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <div className="data-table-wrap">
+          <table className="data-table">
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                <th style={{ padding: "8px 6px" }}>Tipo</th>
-                <th style={{ padding: "8px 6px" }}>Vencimento</th>
-                <th style={{ padding: "8px 6px" }}>Cobrança</th>
-                <th style={{ padding: "8px 6px" }}>Pago</th>
-                <th style={{ padding: "8px 6px" }}>Em aberto</th>
+              <tr>
+                <th>Tipo</th>
+                <th>Vencimento</th>
+                <th>Cobrança</th>
+                <th>Pago</th>
+                <th>Em aberto</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "8px 6px" }}>{r.kind}</td>
-                  <td style={{ padding: "8px 6px" }}>{r.due_date}</td>
-                  <td style={{ padding: "8px 6px" }}>{formatCents(r.amount_cents)}</td>
-                  <td style={{ padding: "8px 6px" }}>{formatCents(r.paid)}</td>
-                  <td style={{ padding: "8px 6px" }}>{formatCents(r.open)}</td>
+                <tr key={r.id}>
+                  <td>{r.kind}</td>
+                  <td>{r.due_date}</td>
+                  <td>{formatCents(r.amount_cents)}</td>
+                  <td>{formatCents(r.paid)}</td>
+                  <td>{formatCents(r.open)}</td>
                 </tr>
               ))}
             </tbody>

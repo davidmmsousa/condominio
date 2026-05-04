@@ -1,65 +1,45 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
-
-const cardStyle: CSSProperties = {
-  display: "block",
-  padding: 20,
-  borderRadius: 10,
-  border: "1px solid #e5e5e5",
-  textDecoration: "none",
-  color: "#111",
-  background: "#fff",
-};
 
 export default function AdminPage() {
   return (
-    <main style={{ paddingTop: 24 }}>
-      <h1 style={{ marginTop: 0 }}>Administração</h1>
-      <p style={{ color: "#555", maxWidth: 640 }}>
-        Configura frações, moradores, gera quotas mensais e regista pagamentos. Tudo fica na base Supabase com
-        regras de acesso (RLS).
+    <main>
+      <h1 className="page-title">Administração</h1>
+      <p className="page-lead" style={{ marginBottom: 0 }}>
+        Configura frações, moradores, gera quotas mensais e regista pagamentos. Tudo fica na base Supabase com regras
+        de acesso (RLS).
       </p>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-          gap: 16,
-          marginTop: 24,
-        }}
-      >
-        <Link href="/admin/unidades" style={cardStyle}>
+      <div className="admin-tile-grid">
+        <Link href="/admin/unidades" className="admin-tile">
           <strong>Frações</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Códigos e permilagens</div>
+          <span>Códigos e permilagens</span>
         </Link>
-        <Link href="/admin/moradores" style={cardStyle}>
+        <Link href="/admin/moradores" className="admin-tile">
           <strong>Moradores</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Contactos por fração</div>
+          <span>Contactos por fração</span>
         </Link>
-        <Link href="/admin/cobrancas" style={cardStyle}>
+        <Link href="/admin/cobrancas" className="admin-tile">
           <strong>Cobranças</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Quotas e extraordinárias</div>
+          <span>Quotas e extraordinárias</span>
         </Link>
-        <Link href="/admin/pagamentos" style={cardStyle}>
+        <Link href="/admin/pagamentos" className="admin-tile">
           <strong>Pagamentos</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Alocação automática</div>
+          <span>Alocação automática</span>
         </Link>
-        <Link href="/admin/fundo-caixa" style={cardStyle}>
+        <Link href="/admin/fundo-caixa" className="admin-tile">
           <strong>Fundo de caixa</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Numerário, banco, prazo e movimentos</div>
+          <span>Numerário, banco, prazo e movimentos</span>
         </Link>
-        <Link href="/admin/contas-correntes" style={cardStyle}>
+        <Link href="/admin/contas-correntes" className="admin-tile">
           <strong>Contas correntes</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Extrato por fração</div>
+          <span>Extrato por fração</span>
         </Link>
-        <Link href="/admin/despesas" style={cardStyle}>
+        <Link href="/admin/despesas" className="admin-tile">
           <strong>Despesas</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>Rubricas e faturas (água, luz, …)</div>
+          <span>Rubricas e faturas (água, luz, …)</span>
         </Link>
-        <Link href="/admin/relatorios" style={cardStyle}>
+        <Link href="/admin/relatorios" className="admin-tile">
           <strong>Relatórios</strong>
-          <div style={{ fontSize: 14, color: "#555", marginTop: 6 }}>
-            CSV, relatório final e novo ano operacional
-          </div>
+          <span>CSV, relatório final e novo ano operacional</span>
         </Link>
       </div>
     </main>

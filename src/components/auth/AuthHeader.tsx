@@ -19,43 +19,29 @@ export async function AuthHeader() {
   }
 
   return (
-    <header
-      style={{
-        borderBottom: "1px solid #e5e5e5",
-        padding: "12px 24px",
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: 12,
-        justifyContent: "space-between",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontWeight: 600, color: "#111", textDecoration: "none" }}>
+    <header className="app-header">
+      <div className="app-header__left">
+        <Link href="/" className="app-brand">
           Condomínio
         </Link>
-        {user ? (
-          <>
-            {roleLabel === "admin" ? (
-              <Link href="/admin" style={{ color: "#333" }}>
-                Admin
-              </Link>
-            ) : null}
-            {roleLabel === "resident" ? (
-              <Link href="/minha-conta" style={{ color: "#333" }}>
-                Minha conta
-              </Link>
-            ) : null}
-          </>
-        ) : (
-          <Link href="/entrar" style={{ color: "#333" }}>
-            Entrar
-          </Link>
-        )}
+        <nav className="app-header__nav" aria-label="Navegação principal">
+          {user ? (
+            <>
+              {roleLabel === "admin" ? (
+                <Link href="/admin">Admin</Link>
+              ) : null}
+              {roleLabel === "resident" ? (
+                <Link href="/minha-conta">Minha conta</Link>
+              ) : null}
+            </>
+          ) : (
+            <Link href="/entrar">Entrar</Link>
+          )}
+        </nav>
       </div>
       {user ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 14, color: "#555" }}>
+        <div className="app-header__meta">
+          <span>
             {user.email}
             {roleLabel ? ` · ${roleLabel}` : ""}
           </span>

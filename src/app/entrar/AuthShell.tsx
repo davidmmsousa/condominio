@@ -6,7 +6,7 @@ const shell: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   padding: "32px 20px",
-  background: "linear-gradient(155deg, #f0f4ff 0%, #f8fafc 42%, #eef2ff 100%)",
+  background: "linear-gradient(160deg, #e8e9f5 0%, #f4f6f9 42%, #e4e8f9 100%)",
   boxSizing: "border-box",
 };
 
