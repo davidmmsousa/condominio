@@ -1,11 +1,13 @@
 import { fetchCondominiumForRelatorios } from "@/lib/condominiumMeta";
+import { fetchYearReportDataset } from "@/lib/reports/yearReportDataset";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import Link from "next/link";
 import { AdvanceYearForm } from "./AdvanceYearForm";
+import { YearReportPreview } from "./YearReportPreview";
 
 type Props = {
-  searchParams: Promise<{ err?: string | string[]; ok?: string | string[] }>;
+  searchParams: Promise<{ err?: string | string[]; ok?: string | string[]; year?: string | string[] }>;
 };
 
 function first(v: string | string[] | undefined) {
@@ -16,6 +18,7 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
   const sp = await searchParams;
   const err = first(sp.err);
   const ok = first(sp.ok);
+  const yearParam = first(sp.year);
 
   const supabase = await createServerRouteSupabaseClient();
   const {
@@ -36,11 +39,26 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
     operatingYearDisplay = condo.operating_year as number;
   }
 
-  const y =
+  const defaultReportYear =
     typeof operatingYearDisplay === "number"
       ? operatingYearDisplay
       : new Date().getFullYear();
-  const yearOptions = Array.from({ length: 11 }, (_, i) => y - 5 + i).filter((n) => n >= 2000 && n <= 2100);
+  let reportYear = defaultReportYear;
+  if (yearParam && /^\d{4}$/.test(yearParam)) {
+    const n = Number(yearParam);
+    if (n >= 2000 && n <= 2100) reportYear = n;
+  }
+  const yearOptions = Array.from({ length: 11 }, (_, i) => reportYear - 5 + i).filter((n) => n >= 2000 && n <= 2100);
+
+  let reportPreview: Awaited<ReturnType<typeof fetchYearReportDataset>> | null = null;
+  let reportPreviewErr: string | null = null;
+  if (condo?.id && !bootstrapErr) {
+    try {
+      reportPreview = await fetchYearReportDataset(supabase, condo.id, reportYear);
+    } catch (e) {
+      reportPreviewErr = e instanceof Error ? e.message : "Erro ao carregar dados do relatório.";
+    }
+  }
 
   return (
     <main style={{ paddingTop: 24 }}>
@@ -106,9 +124,43 @@ export default async function RelatoriosAdminPage({ searchParams }: Props) {
         <AdvanceYearForm disabled={missingOperatingYearColumn} />
       </section>
 
+      {reportPreviewErr ? (
+        <p style={{ background: "#fee2e2", color: "#991b1b", padding: 12, borderRadius: 8, maxWidth: 820 }}>
+          {reportPreviewErr}
+        </p>
+      ) : null}
+
+      {reportPreview ? <YearReportPreview year={reportYear} data={reportPreview} /> : null}
+
       <section style={{ marginTop: 36 }}>
-        <h2 style={{ fontSize: 18 }}>Exportar ano civil {y}</h2>
-        <YearExportLinks yearChoice={yearOptions} defaultYear={y} />
+        <h2 className="page-title" style={{ fontSize: "1.15rem", marginBottom: 12 }}>
+          Ano civil {reportYear} — exportar ficheiros
+        </h2>
+        <nav aria-label="Escolher ano do relatório" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {yearOptions.map((yy) => {
+            const active = yy === reportYear;
+            return (
+              <Link
+                key={yy}
+                href={`/admin/relatorios?year=${yy}`}
+                aria-current={active ? "page" : undefined}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: active ? 700 : 500,
+                  textDecoration: "none",
+                  border: active ? "1px solid #3730a3" : "1px solid #e2e8f0",
+                  background: active ? "#e0e7ff" : "#fff",
+                  color: active ? "#312e81" : "#475569",
+                }}
+              >
+                {yy}
+              </Link>
+            );
+          })}
+        </nav>
+        <YearExportLinks yearChoice={yearOptions} defaultYear={reportYear} />
       </section>
 
       <p style={{ marginTop: 32 }}>
