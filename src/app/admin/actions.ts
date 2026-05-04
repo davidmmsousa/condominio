@@ -555,6 +555,100 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
   }
 }
 
+export async function cancelPaymentAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const payment_id = String(formData.get("payment_id") ?? "").trim();
+    const sendVoidEmailRequested = formData.get("send_void_email") === "on";
+
+    if (!payment_id) throw new Error("Pagamento em falta.");
+
+    const { data: expRef, error: expErr } = await supabase
+      .from("expenses")
+      .select("id")
+      .eq("condominium_id", cid)
+      .eq("imputed_payment_id", payment_id)
+      .maybeSingle();
+    if (expErr) throw new Error(expErr.message);
+    if (expRef?.id) {
+      throw new Error(
+        "Este pagamento vem de uma despesa com antecipação do morador. Apaga a despesa em Admin → Despesas; o pagamento é removido em conjunto.",
+      );
+    }
+
+    const { data: payment, error: pErr } = await supabase
+      .from("payments")
+      .select("id, paid_at, amount_cents, unit_id")
+      .eq("id", payment_id)
+      .eq("condominium_id", cid)
+      .maybeSingle();
+    if (pErr || !payment) throw new Error("Pagamento não encontrado.");
+
+    const receiptYear = new Date(payment.paid_at).getFullYear();
+    const receiptNumber = `R/${receiptYear}/${payment.id.slice(0, 8).toUpperCase()}`;
+
+    const { data: unitRow } = await supabase.from("units").select("code").eq("id", payment.unit_id).maybeSingle();
+    const unitCode = unitRow?.code ?? "?";
+
+    const { data: resident } = await supabase
+      .from("residents")
+      .select("full_name, email")
+      .eq("unit_id", payment.unit_id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const payerName = resident?.full_name?.trim() || `Condómino (${unitCode})`;
+    const residentEmail = resident?.email?.trim() || null;
+
+    let mailNote = "";
+    if (sendVoidEmailRequested) {
+      if (!isGmailConfigured()) {
+        mailNote = " Email de aviso não enviado (Gmail não configurado no servidor).";
+      } else if (!residentEmail) {
+        mailNote = " Email de aviso não enviado (morador sem email na ficha).";
+      } else {
+        try {
+          await sendGmailMessage({
+            to: residentEmail,
+            subject: `Condominio - Anulacao ${receiptNumber}`,
+            text: `Olá ${payerName},\n\nEste email comunica que o pagamento registado por engano na gestão do condomínio foi anulado.\n\nO recibo ${receiptNumber} deixa de estar válido. Se tens esse recibo ou o PDF correspondente — ou mensagens por email anterior com o recibo — deves ignorá-lo a partir da data desta comunicação.\n\nEm caso de dúvida, contacta a administração do condomínio.\n\nCumprimentos,\nGestão do condomínio`,
+          });
+          mailNote = " Email de anulação enviado.";
+        } catch (mailErr) {
+          mailNote = ` Aviso: envio do email falhou (${mailErr instanceof Error ? mailErr.message : "erro"}).`;
+        }
+      }
+    }
+
+    const { error: delErr } = await supabase
+      .from("payments")
+      .delete()
+      .eq("id", payment_id)
+      .eq("condominium_id", cid);
+
+    if (delErr) throw new Error(delErr.message);
+
+    revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/pagamentos/tabela-geral");
+    revalidatePath("/admin/cobrancas");
+    revalidatePath("/admin/contas-correntes");
+    revalidatePath("/admin/fundo-caixa");
+    revalidatePath("/admin/despesas");
+    revalidatePath("/minha-conta");
+
+    const amountStr = `${(payment.amount_cents / 100).toFixed(2)} €`;
+    return {
+      ok: true,
+      message: `Pagamento anulado (${receiptNumber}, ${amountStr}). Alocações e movimento de tesouraria associados foram removidos quando existiam.${mailNote}`,
+    };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao anular pagamento." };
+  }
+}
+
 export async function createExpenseCategoryAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   try {
     const { supabase } = await requireAdmin();

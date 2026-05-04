@@ -3,6 +3,7 @@ import { formatCents } from "@/lib/money";
 import Link from "next/link";
 import { PaymentForm } from "./PaymentForm";
 import { ResendReceiptEmailButton } from "./ResendReceiptEmailButton";
+import { VoidPaymentRowForm } from "./VoidPaymentRowForm";
 
 export default async function PagamentosAdminPage() {
   const supabase = await createServerRouteSupabaseClient();
@@ -36,6 +37,10 @@ export default async function PagamentosAdminPage() {
         </span>
       </p>
       <PaymentForm units={units ?? []} />
+      <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b", maxWidth: 720 }}>
+        Pagamento errado? Na tabela abaixo podes <strong>anular</strong> (reverte alocações e tesouraria). Opcionalmente
+        enviamos email ao morador a desconsiderar o recibo anterior.
+      </p>
       <h2 style={{ fontSize: 18, marginTop: 40 }}>Últimos pagamentos</h2>
       {!list.length ? (
         <p style={{ color: "#555" }}>Sem pagamentos registados.</p>
@@ -50,6 +55,7 @@ export default async function PagamentosAdminPage() {
                 <th style={{ padding: "8px 6px" }}>Meio</th>
                 <th style={{ padding: "8px 6px" }}>Nota</th>
                 <th style={{ padding: "8px 6px", minWidth: 140 }}>Recibo</th>
+                <th style={{ padding: "8px 6px", minWidth: 200 }}>Anulação</th>
               </tr>
             </thead>
             <tbody>
@@ -72,6 +78,14 @@ export default async function PagamentosAdminPage() {
                       </a>
                       <ResendReceiptEmailButton paymentId={p.id} />
                     </div>
+                  </td>
+                  <td style={{ padding: "8px 6px", verticalAlign: "top" }}>
+                    <VoidPaymentRowForm
+                      paymentId={p.id}
+                      fractionCode={p.units?.code ?? "—"}
+                      amountFormatted={formatCents(p.amount_cents)}
+                      paidAtLabel={new Date(p.paid_at).toLocaleString("pt-PT")}
+                    />
                   </td>
                 </tr>
               ))}
