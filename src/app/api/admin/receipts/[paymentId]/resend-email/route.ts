@@ -45,7 +45,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ paymen
   }
 
   try {
-    const { pdf, receiptNumber, residentEmail, payerName, unitCode } = await buildReceiptPdfForPayment(
+    const { pdf, receiptNumber, residentEmail, payerName } = await buildReceiptPdfForPayment(
       supabase,
       paymentId,
       cid,
@@ -59,7 +59,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ paymen
 
     const { id } = await sendGmailMessage({
       to: residentEmail,
-      subject: `Recibo ${receiptNumber} — fração ${unitCode}`,
+      subject: `Condominio - ${receiptNumber}`,
       text: `Olá ${payerName},\n\nSegue em anexo o recibo do pagamento (reenvio manual pela gestão).\n\nCumprimentos,\nGestão do condomínio`,
       pdfFilename: `recibo-${paymentId.slice(0, 8)}.pdf`,
       pdfBytes: pdf,

@@ -524,7 +524,7 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
 
     if (process.env.RECEIPT_AUTOSEND_EMAIL !== "false" && isGmailConfigured()) {
       try {
-        const { pdf, receiptNumber, residentEmail, payerName, unitCode } = await buildReceiptPdfForPayment(
+        const { pdf, receiptNumber, residentEmail, payerName } = await buildReceiptPdfForPayment(
           supabase,
           payment.id,
           cid,
@@ -532,7 +532,7 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
         if (residentEmail) {
           await sendGmailMessage({
             to: residentEmail,
-            subject: `Recibo ${receiptNumber} — fração ${unitCode}`,
+            subject: `Condominio - ${receiptNumber}`,
             text: `Olá ${payerName},\n\nSegue em anexo o recibo do pagamento registado no condomínio.\n\nCumprimentos,\nGestão do condomínio`,
             pdfFilename: `recibo-${payment.id.slice(0, 8)}.pdf`,
             pdfBytes: pdf,
