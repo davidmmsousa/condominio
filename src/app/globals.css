@@ -314,3 +314,56 @@ main.page-shell code {
   border-radius: 4px;
   background: rgba(15, 23, 42, 0.06);
 }
+
+/* Login / recuperar palavra-passe — fundo com foto do condomínio */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  background-color: #1c1917;
+  background-image: linear-gradient(160deg, rgba(15, 23, 42, 0.55), rgba(28, 25, 23, 0.65)),
+    url("/login-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.auth-shell__card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 28px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 22px 70px rgba(15, 23, 42, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset,
+    0 0 0 1px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.auth-shell__brand {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #b8472f;
+  margin-bottom: 6px;
+}
+
+.auth-shell__title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.auth-shell__lead {
+  margin: 0 0 24px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
