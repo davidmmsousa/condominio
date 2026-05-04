@@ -18,6 +18,11 @@ const EnvSchema = z.object({
     (v) => (v === "" ? undefined : v),
     z.string().email().optional(),
   ),
+  /** Password inicial ao criar conta Auth automaticamente para novo morador (servidor). */
+  RESIDENT_DEFAULT_PASSWORD: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().min(6).optional(),
+  ),
 });
 
 export const env = EnvSchema.parse(process.env);

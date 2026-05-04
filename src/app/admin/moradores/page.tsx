@@ -26,10 +26,11 @@ export default async function MoradoresAdminPage() {
     <main style={{ paddingTop: 24 }}>
       <h1 style={{ marginTop: 0 }}>Moradores</h1>
       <p style={{ color: "#555", maxWidth: 720 }}>
-        A <strong>lista</strong> é a tabela <code>residents</code> (contactos). O portal do morador usa{" "}
-        <code>profiles.unit_id</code> da conta com que inicias sessão. Ao criar um morador com email, o servidor tenta
-        alinhar os dois automaticamente (patch SQL + <code>SUPABASE_SERVICE_ROLE_KEY</code>). Para fichas antigas, usa
-        &quot;Ligar ao portal&quot;.
+        A <strong>lista</strong> é a tabela <code>residents</code> (contactos). Com email e{" "}
+        <code>SUPABASE_SERVICE_ROLE_KEY</code>, ao guardar um morador o sistema <strong>cria a conta Auth</strong> (se
+        o email ainda não existir) com password em <code>RESIDENT_DEFAULT_PASSWORD</code> ou, se não definires,{" "}
+        <code>tomar2026</code>. Se o email já existir, associa o perfil à fração. &quot;Ligar ao portal&quot; faz o
+        mesmo numa ficha antiga.
       </p>
       <CreateResidentForm units={units ?? []} />
       <h2 style={{ fontSize: 18 }}>Lista</h2>
