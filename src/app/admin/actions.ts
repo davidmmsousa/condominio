@@ -434,33 +434,75 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
       paid_at = new Date().toISOString();
     }
 
-    const { data: payment, error: pErr } = await supabase
+    const basePayment = {
+      condominium_id: cid,
+      unit_id,
+      paid_at,
+      amount_cents: euros,
+      method,
+      note,
+      created_by: user.id,
+    };
+
+    let payment: { id: string };
+    let treasurySkipped = false;
+
+    const insWithTreasury = await supabase
       .from("payments")
-      .insert({
-        condominium_id: cid,
-        unit_id,
-        paid_at,
-        amount_cents: euros,
-        method,
-        note,
-        created_by: user.id,
-        received_in,
-      })
+      .insert({ ...basePayment, received_in })
       .select("id")
       .single();
 
-    if (pErr || !payment) throw new Error(pErr?.message ?? "Erro ao registar pagamento.");
+    if (insWithTreasury.error || !insWithTreasury.data) {
+      const em = insWithTreasury.error?.message ?? "";
+      const missingReceivedIn =
+        em.includes("received_in") || em.toLowerCase().includes("schema cache");
+      if (missingReceivedIn) {
+        const insLegacy = await supabase.from("payments").insert(basePayment).select("id").single();
+        if (insLegacy.error || !insLegacy.data) {
+          throw new Error(insLegacy.error?.message ?? "Erro ao registar pagamento.");
+        }
+        payment = insLegacy.data;
+        treasurySkipped = true;
+      } else {
+        throw new Error(em || "Erro ao registar pagamento.");
+      }
+    } else {
+      payment = insWithTreasury.data;
+    }
 
-    const treasuryAccountId = await getTreasuryAccountId(supabase, cid, received_in);
-    const { error: tmErr } = await supabase.from("treasury_movements").insert({
-      condominium_id: cid,
-      treasury_account_id: treasuryAccountId,
-      occurred_at: paid_at,
-      amount_cents: euros,
-      memo: "Entrada — pagamento de fração",
-      payment_id: payment.id,
-    });
-    if (tmErr) throw new Error(tmErr.message);
+    if (!treasurySkipped) {
+      try {
+        const treasuryAccountId = await getTreasuryAccountId(supabase, cid, received_in);
+        const { error: tmErr } = await supabase.from("treasury_movements").insert({
+          condominium_id: cid,
+          treasury_account_id: treasuryAccountId,
+          occurred_at: paid_at,
+          amount_cents: euros,
+          memo: "Entrada — pagamento de fração",
+          payment_id: payment.id,
+        });
+        if (tmErr) {
+          const tm = tmErr.message ?? "";
+          if (
+            tm.toLowerCase().includes("treasury_movements") ||
+            tm.toLowerCase().includes("treasury_accounts") ||
+            tm.toLowerCase().includes("schema cache")
+          ) {
+            treasurySkipped = true;
+          } else {
+            throw new Error(tmErr.message);
+          }
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.includes("patch_treasury") || msg.includes("Contas de tesouraria")) {
+          treasurySkipped = true;
+        } else {
+          throw e;
+        }
+      }
+    }
 
     const { remainingCents, allocations } = await allocatePaymentCurrentFirst(supabase, {
       paymentId: payment.id,
@@ -475,6 +517,10 @@ export async function createPaymentAction(_prev: ActionState | null, formData: F
 
     let message = `Pagamento registado. Alocações: ${allocations.length}.`;
     if (remainingCents > 0) message += ` Crédito / sem cobrança para aplicar: ${(remainingCents / 100).toFixed(2)} €`;
+    if (treasurySkipped) {
+      message +=
+        " Aviso: a base ainda não tem tesouraria (`received_in` / `treasury_*`) — corre `supabase/patch_treasury.sql` no Supabase para registar entradas no fundo de caixa.";
+    }
 
     if (process.env.RECEIPT_AUTOSEND_EMAIL !== "false" && isGmailConfigured()) {
       try {
