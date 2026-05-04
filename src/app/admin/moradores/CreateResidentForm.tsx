@@ -49,7 +49,11 @@ export function CreateResidentForm({ units }: { units: Array<{ id: string; code:
         <p style={{ color: "#b00020", fontSize: 14 }}>Cria primeiro pelo menos uma fração.</p>
       ) : null}
       {state?.error ? <p style={{ color: "#b00020", margin: 0 }}>{state.error}</p> : null}
-      {state?.ok ? <p style={{ color: "#0a0", margin: 0 }}>Morador registado.</p> : null}
+      {state?.ok ? (
+        <p style={{ color: "#0a0", margin: 0 }}>
+          Morador registado.{state.message ? ` ${state.message}` : ""}
+        </p>
+      ) : null}
       <button
         type="submit"
         disabled={pending || units.length === 0}

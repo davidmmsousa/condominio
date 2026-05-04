@@ -22,8 +22,9 @@ export default async function MinhaContaPage() {
       <main style={{ padding: 24, maxWidth: 720 }}>
         <h1 style={{ marginTop: 0 }}>Minha conta</h1>
         <p style={{ color: "#555" }}>
-          A tua conta ainda não está associada a uma fração no sistema. Pede ao administrador para definir o{" "}
-          <code>unit_id</code> no teu perfil (Supabase → <code>profiles</code>).
+          O portal usa a fração em <code>profiles.unit_id</code> (conta com que entras), não só a ficha em
+          Moradores. Pede ao administrador para premir <strong>Ligar ao portal</strong> na tua linha em Admin →
+          Moradores (ou editar <code>profiles</code> no Supabase).
         </p>
       </main>
     );

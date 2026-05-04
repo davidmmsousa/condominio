@@ -6,8 +6,9 @@ import { buildReceiptPdfForPayment } from "@/lib/receipts/buildReceiptPdfForPaym
 import { correnteDueDateForMonth, extraordinariaDefaultDueDate } from "@/lib/billing/dueDates";
 import { splitTotalCentsByPermilages } from "@/lib/billing/splitByPermilage";
 import { parseEurosToCents } from "@/lib/money";
+import { env } from "@/lib/env";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
-import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
+import { createServerRouteSupabaseClient, createServiceSupabaseClient } from "@/lib/supabase/server-client";
 import { revalidatePath } from "next/cache";
 
 export type ActionState = { ok?: boolean; error?: string; message?: string; paymentId?: string };
@@ -25,6 +26,30 @@ async function requireAdmin() {
 
 async function singletonCondoId(supabase: Awaited<ReturnType<typeof createServerRouteSupabaseClient>>) {
   return ensureSingletonCondominiumId(supabase);
+}
+
+/** Atualiza `profiles` do utilizador Auth com o mesmo email (morador). */
+async function tryLinkAuthProfileToResident(params: {
+  email: string | null | undefined;
+  unitId: string;
+  condominiumId: string;
+}): Promise<{ linked: boolean; rpcError?: string }> {
+  const email = params.email?.trim();
+  if (!email) return { linked: false };
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return { linked: false };
+  let admin;
+  try {
+    admin = createServiceSupabaseClient();
+  } catch {
+    return { linked: false };
+  }
+  const { data, error } = await admin.rpc("link_resident_profile_by_email", {
+    p_email: email,
+    p_unit_id: params.unitId,
+    p_condominium_id: params.condominiumId,
+  });
+  if (error) return { linked: false, rpcError: error.message };
+  return { linked: Boolean(data) };
 }
 
 export async function createUnitAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
@@ -84,10 +109,73 @@ export async function createResidentAction(_prev: ActionState | null, formData: 
       is_active: true,
     });
     if (error) throw new Error(error.message);
+
+    let message: string | undefined;
+    if (email) {
+      const sync = await tryLinkAuthProfileToResident({
+        email,
+        unitId: unit_id,
+        condominiumId: cid,
+      });
+      if (sync.linked) {
+        message = "Conta de login com este email ficou associada à fração no portal.";
+      } else if (sync.rpcError) {
+        message =
+          "Morador guardado. Aviso: não foi possível sincronizar o login — confirma que aplicaste supabase/patch_link_resident_profile_by_email.sql na base.";
+      } else if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+        message =
+          "Morador guardado. Para associar o login automaticamente, define SUPABASE_SERVICE_ROLE_KEY no servidor e aplica o patch SQL link_resident_profile_by_email.";
+      }
+    }
+
     revalidatePath("/admin/moradores");
-    return { ok: true };
+    return { ok: true, message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao criar morador." };
+  }
+}
+
+export async function linkResidentProfileAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) throw new Error("ID em falta.");
+
+    const { data: row, error: re } = await supabase
+      .from("residents")
+      .select("email, unit_id")
+      .eq("id", id)
+      .eq("condominium_id", cid)
+      .maybeSingle();
+    if (re) throw new Error(re.message);
+    if (!row) throw new Error("Morador não encontrado.");
+    if (!row.email?.trim()) throw new Error("Este morador não tem email na ficha.");
+
+    if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("Falta SUPABASE_SERVICE_ROLE_KEY no ambiente do servidor.");
+    }
+
+    const sync = await tryLinkAuthProfileToResident({
+      email: row.email,
+      unitId: row.unit_id,
+      condominiumId: cid,
+    });
+    if (sync.rpcError) {
+      throw new Error(
+        `Sincronização falhou (${sync.rpcError}). Aplica supabase/patch_link_resident_profile_by_email.sql no Supabase.`,
+      );
+    }
+    if (!sync.linked) {
+      throw new Error(
+        "Não foi possível associar: não há conta Auth com este email, ou o perfil não é de morador (resident).",
+      );
+    }
+
+    revalidatePath("/admin/moradores");
+    return { ok: true, message: "Perfil de login atualizado com a fração desta ficha." };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao ligar ao portal." };
   }
 }
 

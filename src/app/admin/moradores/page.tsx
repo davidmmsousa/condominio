@@ -1,6 +1,7 @@
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { CreateResidentForm } from "./CreateResidentForm";
 import { DeleteResidentButton } from "./DeleteResidentButton";
+import { LinkResidentProfileButton } from "./LinkResidentProfileButton";
 
 export default async function MoradoresAdminPage() {
   const supabase = await createServerRouteSupabaseClient();
@@ -24,9 +25,11 @@ export default async function MoradoresAdminPage() {
   return (
     <main style={{ paddingTop: 24 }}>
       <h1 style={{ marginTop: 0 }}>Moradores</h1>
-      <p style={{ color: "#555", maxWidth: 640 }}>
-        Registo para contactos e gestão. O login na app (morador) continua ligado ao email da conta Auth e ao{" "}
-        <code>profiles.unit_id</code> configurado pelo administrador no Supabase.
+      <p style={{ color: "#555", maxWidth: 720 }}>
+        A <strong>lista</strong> é a tabela <code>residents</code> (contactos). O portal do morador usa{" "}
+        <code>profiles.unit_id</code> da conta com que inicias sessão. Ao criar um morador com email, o servidor tenta
+        alinhar os dois automaticamente (patch SQL + <code>SUPABASE_SERVICE_ROLE_KEY</code>). Para fichas antigas, usa
+        &quot;Ligar ao portal&quot;.
       </p>
       <CreateResidentForm units={units ?? []} />
       <h2 style={{ fontSize: 18 }}>Lista</h2>
@@ -59,7 +62,10 @@ export default async function MoradoresAdminPage() {
                   <div style={{ fontSize: 14, color: "#333" }}>{r.phone}</div>
                 ) : null}
               </div>
-              <DeleteResidentButton residentId={r.id} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                {r.email ? <LinkResidentProfileButton residentId={r.id} /> : null}
+                <DeleteResidentButton residentId={r.id} />
+              </div>
             </li>
           ))}
         </ul>
