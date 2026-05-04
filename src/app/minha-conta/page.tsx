@@ -39,12 +39,14 @@ export default async function MinhaContaPage() {
 
   const { data: payments } = await supabase
     .from("payments")
-    .select("amount_cents, paid_at")
+    .select("id, amount_cents, paid_at, method, note")
     .eq("unit_id", unitId)
     .order("paid_at", { ascending: true });
 
   const chargeList = charges ?? [];
-  const payRows = payments ?? [];
+  const paymentList = payments ?? [];
+  const payRows = paymentList.map((p) => ({ amount_cents: p.amount_cents, paid_at: p.paid_at }));
+  const paymentsNewestFirst = [...paymentList].reverse();
 
   const appliedByCharge = computeFifoAppliedPerCharge(
     chargeList.map((c) => ({
@@ -93,6 +95,40 @@ export default async function MinhaContaPage() {
                   <td>{formatCents(r.amount_cents)}</td>
                   <td>{formatCents(r.paid)}</td>
                   <td>{formatCents(r.open)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 className="page-title" style={{ fontSize: "1.25rem", marginTop: 36, marginBottom: 12 }}>
+        Pagamentos registados
+      </h2>
+      <p className="page-lead" style={{ marginBottom: 12 }}>
+        Lista dos pagamentos que a administração registou para a fração <strong>{unitCode ?? "—"}</strong> (mais recentes
+        primeiro).
+      </p>
+      {!paymentsNewestFirst.length ? (
+        <p>Ainda não há pagamentos registados para a tua fração.</p>
+      ) : (
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Valor</th>
+                <th>Meio</th>
+                <th>Nota</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentsNewestFirst.map((p) => (
+                <tr key={p.id}>
+                  <td>{new Date(p.paid_at).toLocaleString("pt-PT")}</td>
+                  <td>{formatCents(p.amount_cents)}</td>
+                  <td>{p.method?.trim() ? p.method : "—"}</td>
+                  <td>{p.note?.trim() ? p.note : "—"}</td>
                 </tr>
               ))}
             </tbody>
