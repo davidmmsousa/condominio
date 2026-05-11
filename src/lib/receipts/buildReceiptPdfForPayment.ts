@@ -59,7 +59,7 @@ export async function buildReceiptPdfForPayment(
 
   const { data: resident } = await supabase
     .from("residents")
-    .select("full_name, email")
+    .select("full_name, email, tax_id")
     .eq("unit_id", p.unit_id)
     .eq("is_active", true)
     .order("created_at", { ascending: true })
@@ -68,6 +68,7 @@ export async function buildReceiptPdfForPayment(
 
   const payerName = resident?.full_name?.trim() || `Condómino (${unitCode})`;
   const residentEmail = resident?.email?.trim() || null;
+  const payerTaxId = resident?.tax_id?.trim() || null;
 
   const { data: allocs, error: aErr } = await supabase
     .from("payment_allocations")
@@ -135,6 +136,7 @@ export async function buildReceiptPdfForPayment(
     issuedAtIso: p.paid_at,
     payerName,
     payerEmail: residentEmail,
+    payerTaxId,
     unitCode,
     amountCents: p.amount_cents,
     lines,

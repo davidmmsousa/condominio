@@ -35,6 +35,10 @@ export function CreateResidentForm({ units }: { units: Array<{ id: string; code:
         <input name="phone" type="tel" disabled={pending} style={inp} />
       </label>
       <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
+        N.º contribuinte / NIF (opcional)
+        <input name="tax_id" inputMode="numeric" disabled={pending} placeholder="9 dígitos" style={inp} />
+      </label>
+      <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
         Fração
         <select name="unit_id" required disabled={pending || units.length === 0} style={inp}>
           <option value="">— escolher —</option>

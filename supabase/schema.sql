@@ -36,6 +36,7 @@ create table if not exists public.residents (
   full_name text not null,
   email text,
   phone text,
+  tax_id text,
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );

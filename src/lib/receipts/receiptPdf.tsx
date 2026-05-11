@@ -10,6 +10,7 @@ export type ReceiptPdfInput = {
   issuedAtIso: string;
   payerName: string;
   payerEmail?: string | null;
+  payerTaxId?: string | null;
   unitCode: string;
   amountCents: number;
   lines: Array<{ label: string; amountCents: number }>;
@@ -50,6 +51,7 @@ function ReceiptDoc(input: ReceiptPdfInput) {
         <View style={styles.section}>
           <Text>Fração: {input.unitCode}</Text>
           <Text>Pagador: {input.payerName}</Text>
+          {input.payerTaxId ? <Text>NIF: {input.payerTaxId}</Text> : null}
           {input.payerEmail ? <Text>Email: {input.payerEmail}</Text> : null}
           {input.paymentMethod ? <Text>Meio: {input.paymentMethod}</Text> : null}
           {input.paymentNote ? <Text>Nota registo: {input.paymentNote}</Text> : null}

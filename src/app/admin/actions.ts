@@ -8,6 +8,7 @@ import { buildReceiptPdfForPayment } from "@/lib/receipts/buildReceiptPdfForPaym
 import { correnteDueDateForMonth, extraordinariaDefaultDueDate } from "@/lib/billing/dueDates";
 import { splitTotalCentsByPermilages } from "@/lib/billing/splitByPermilage";
 import { parseEurosToCents } from "@/lib/money";
+import { parseOptionalPtTaxId } from "@/lib/taxId";
 import { getTreasuryAccountId } from "@/lib/treasury/resolveAccount";
 import type { ExpenseFunding, TreasuryBookKind } from "@/lib/treasury/types";
 import { createResidentAuthUserOrLink, tryLinkAuthProfileToResident } from "@/lib/auth/residentAuthBootstrap";
@@ -88,6 +89,7 @@ export async function createResidentAction(_prev: ActionState | null, formData: 
     const full_name = String(formData.get("full_name") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim() || null;
     const phone = String(formData.get("phone") ?? "").trim() || null;
+    const tax_id = parseOptionalPtTaxId(String(formData.get("tax_id") ?? ""));
     const unit_id = String(formData.get("unit_id") ?? "").trim();
     if (!full_name) throw new Error("Indica o nome.");
     if (!unit_id) throw new Error("Escolhe a fração.");
@@ -97,6 +99,7 @@ export async function createResidentAction(_prev: ActionState | null, formData: 
       full_name,
       email,
       phone,
+      tax_id,
       is_active: true,
     });
     if (error) throw new Error(error.message);
@@ -131,6 +134,43 @@ export async function createResidentAction(_prev: ActionState | null, formData: 
     return { ok: true, message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao criar morador." };
+  }
+}
+
+export async function updateResidentAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const id = String(formData.get("id") ?? "").trim();
+    const full_name = String(formData.get("full_name") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim() || null;
+    const phone = String(formData.get("phone") ?? "").trim() || null;
+    const tax_id = parseOptionalPtTaxId(String(formData.get("tax_id") ?? ""));
+    const unit_id = String(formData.get("unit_id") ?? "").trim();
+
+    if (!id) throw new Error("ID em falta.");
+    if (!full_name) throw new Error("Indica o nome.");
+    if (!unit_id) throw new Error("Escolhe a fração.");
+
+    const { data: unitRow, error: uErr } = await supabase
+      .from("units")
+      .select("id")
+      .eq("id", unit_id)
+      .eq("condominium_id", cid)
+      .maybeSingle();
+    if (uErr || !unitRow) throw new Error("Fração inválida.");
+
+    const { error } = await supabase
+      .from("residents")
+      .update({ full_name, email, phone, tax_id, unit_id })
+      .eq("id", id)
+      .eq("condominium_id", cid);
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/admin/moradores");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao actualizar morador." };
   }
 }
 
