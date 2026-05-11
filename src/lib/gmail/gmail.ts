@@ -67,6 +67,12 @@ function encodeRfc2047HeaderValue(value: string): string {
   return chunks.join(" ");
 }
 
+export type GmailBinaryAttachment = {
+  filename: string;
+  mimeType: string;
+  bytes: Uint8Array;
+};
+
 export type SendGmailMessageArgs = {
   to: string;
   subject: string;
@@ -74,13 +80,31 @@ export type SendGmailMessageArgs = {
   from?: string; // defaults to env.GMAIL_SENDER
   pdfFilename?: string;
   pdfBytes?: Uint8Array;
+  attachments?: GmailBinaryAttachment[];
 };
+
+function appendBase64Attachment(
+  raw: string,
+  boundary: string,
+  attachment: GmailBinaryAttachment,
+): string {
+  let out = raw;
+  out += `--${boundary}\r\n`;
+  out += `Content-Type: ${attachment.mimeType}\r\n`;
+  out += `Content-Disposition: attachment; filename="${attachment.filename}"\r\n`;
+  out += "Content-Transfer-Encoding: base64\r\n\r\n";
+  out += Buffer.from(attachment.bytes).toString("base64").replace(/(.{76})/g, "$1\r\n") + "\r\n";
+  return out;
+}
 
 export async function sendGmailMessage(args: SendGmailMessageArgs): Promise<{ id: string }> {
   const from = args.from ?? env.GMAIL_SENDER;
   if (!from) throw new Error("Missing GMAIL_SENDER");
 
   const boundary = "condominio_boundary_" + Math.random().toString(16).slice(2);
+  const extraAttachments = args.attachments ?? [];
+  const hasPdf = Boolean(args.pdfBytes?.length);
+  const hasMultipart = hasPdf || extraAttachments.length > 0;
 
   const headers = [
     `From: ${from}`,
@@ -90,17 +114,22 @@ export async function sendGmailMessage(args: SendGmailMessageArgs): Promise<{ id
   ];
 
   let raw = "";
-  if (args.pdfBytes?.length) {
+  if (hasMultipart) {
     headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
     raw += headers.join("\r\n") + "\r\n\r\n";
     raw += `--${boundary}\r\n`;
     raw += `Content-Type: text/plain; charset="UTF-8"\r\n\r\n`;
     raw += `${args.text}\r\n\r\n`;
-    raw += `--${boundary}\r\n`;
-    raw += `Content-Type: application/pdf\r\n`;
-    raw += `Content-Disposition: attachment; filename="${args.pdfFilename ?? "recibo.pdf"}"\r\n`;
-    raw += "Content-Transfer-Encoding: base64\r\n\r\n";
-    raw += Buffer.from(args.pdfBytes).toString("base64").replace(/(.{76})/g, "$1\r\n") + "\r\n";
+    for (const attachment of extraAttachments) {
+      raw = appendBase64Attachment(raw, boundary, attachment);
+    }
+    if (hasPdf && args.pdfBytes) {
+      raw = appendBase64Attachment(raw, boundary, {
+        filename: args.pdfFilename ?? "recibo.pdf",
+        mimeType: "application/pdf",
+        bytes: args.pdfBytes,
+      });
+    }
     raw += `--${boundary}--\r\n`;
   } else {
     headers.push(`Content-Type: text/plain; charset="UTF-8"`);
