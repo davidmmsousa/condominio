@@ -367,3 +367,142 @@ main.page-shell code {
   font-size: 14px;
   line-height: 1.5;
 }
+
+/* Portal morador — conta + painel lateral */
+.resident-portal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 22px 56px;
+}
+
+.resident-portal-layout__main {
+  min-width: 0;
+}
+
+main.page-shell.page-shell--portal {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.resident-quick-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 76px;
+}
+
+.resident-quick-panel__card {
+  padding: 18px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.resident-quick-panel__title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.resident-quick-panel__hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.resident-quick-panel__action {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(55, 48, 163, 0.25);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.resident-quick-panel__action:hover {
+  background: #d4dcff;
+  border-color: rgba(55, 48, 163, 0.4);
+}
+
+.resident-quick-panel__iban-block {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.resident-quick-panel__iban {
+  margin: 0 0 10px;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.resident-quick-panel__copy {
+  width: 100%;
+}
+
+.resident-quick-panel__contacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.resident-quick-panel__contacts li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resident-quick-panel__contact-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.resident-quick-panel__phone {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.resident-quick-panel__phone:hover {
+  text-decoration: underline;
+}
+
+.resident-quick-panel__contact-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .resident-portal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .resident-quick-panel {
+    position: static;
+    order: -1;
+  }
+}

@@ -1,6 +1,7 @@
 import { computeFifoAppliedPerCharge } from "@/lib/billing/fifoApply";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
+import { ResidentPortalShell } from "./ResidentPortalShell";
 
 export default async function MinhaContaPage() {
   const supabase = await createServerRouteSupabaseClient();
@@ -20,14 +21,16 @@ export default async function MinhaContaPage() {
 
   if (!unitId) {
     return (
-      <main className="page-shell page-shell--narrow">
-        <h1 className="page-title">Minha conta</h1>
-        <p className="page-lead">
-          O portal usa a fração em <code>profiles.unit_id</code> (conta com que entras), não só a ficha em Moradores.
-          Pede ao administrador para premir <strong>Ligar ao portal</strong> na tua linha em Admin → Moradores (ou editar{" "}
-          <code>profiles</code> no Supabase).
-        </p>
-      </main>
+      <ResidentPortalShell>
+        <main className="page-shell page-shell--portal">
+          <h1 className="page-title">Minha conta</h1>
+          <p className="page-lead">
+            O portal usa a fração em <code>profiles.unit_id</code> (conta com que entras), não só a ficha em Moradores.
+            Pede ao administrador para premir <strong>Ligar ao portal</strong> na tua linha em Admin → Moradores (ou editar{" "}
+            <code>profiles</code> no Supabase).
+          </p>
+        </main>
+      </ResidentPortalShell>
     );
   }
 
@@ -67,7 +70,8 @@ export default async function MinhaContaPage() {
   });
 
   return (
-    <main className="page-shell page-shell--compact">
+    <ResidentPortalShell>
+    <main className="page-shell page-shell--portal">
       <h1 className="page-title">Minha conta</h1>
       <p className="page-lead">
         Fração <strong>{unitCode ?? "—"}</strong>. Saldo estimado em dívida nas cobranças listadas abaixo:{" "}
@@ -136,5 +140,6 @@ export default async function MinhaContaPage() {
         </div>
       )}
     </main>
+    </ResidentPortalShell>
   );
 }
