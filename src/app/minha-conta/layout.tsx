@@ -2,6 +2,8 @@ import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+export const dynamic = "force-dynamic";
+
 export default async function MinhaContaLayout({ children }: { children: ReactNode }) {
   const supabase = await createServerRouteSupabaseClient();
   const {

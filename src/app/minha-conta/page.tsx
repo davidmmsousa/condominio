@@ -19,7 +19,7 @@ export default async function MinhaContaPage() {
     return (
       <ResidentPortalShell paymentIban={portal.paymentIban}>
         <main className="page-shell page-shell--portal">
-          <h1 className="page-title">Início</h1>
+          <h1 className="page-title">Minha conta</h1>
           <p className="page-lead">
             O portal usa a fração em <code>profiles.unit_id</code> (conta com que entras), não só a ficha em Moradores.
             Pede ao administrador para premir <strong>Ligar ao portal</strong> na tua linha em Admin → Moradores (ou editar{" "}
@@ -35,9 +35,9 @@ export default async function MinhaContaPage() {
   return (
     <ResidentPortalShell paymentIban={portal.paymentIban}>
       <main className="page-shell page-shell--portal">
-        <h1 className="page-title">Início</h1>
+        <h1 className="page-title">Minha conta</h1>
         <p className="page-lead">
-          Fração <strong>{portal.unitCode ?? "—"}</strong>.
+          Fração <strong>{portal.unitCode ?? "—"}</strong>. Escolhe uma ação abaixo.
         </p>
         <section className="resident-hub-summary" aria-label="Saldo em aberto">
           <p className="resident-hub-summary__label">{openCents > 0 ? "Saldo em aberto" : "Sem nada por pagar"}</p>
