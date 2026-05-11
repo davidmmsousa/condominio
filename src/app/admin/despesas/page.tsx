@@ -3,7 +3,7 @@ import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
 import { CreateCategoryForm } from "./CreateCategoryForm";
 import { EXPENSE_FUNDING_LABELS, type ExpenseFunding } from "@/lib/treasury/types";
-import { CreateExpenseForm } from "./CreateExpenseForm";
+import { RegisterExpenseSection } from "./RegisterExpenseSection";
 import { DeleteCategoryButton } from "./DeleteCategoryButton";
 import { DeleteExpenseButton } from "./DeleteExpenseButton";
 
@@ -81,7 +81,7 @@ export default async function DespesasAdminPage() {
 
       <section style={{ marginTop: 32, maxWidth: 720 }}>
         <h2 style={{ fontSize: 18 }}>Registar fatura / despesa</h2>
-        <CreateExpenseForm categories={categories ?? []} units={units ?? []} />
+        <RegisterExpenseSection categories={categories ?? []} units={units ?? []} />
       </section>
 
       <section style={{ marginTop: 40 }}>
