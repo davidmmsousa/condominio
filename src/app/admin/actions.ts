@@ -8,6 +8,7 @@ import { buildReceiptPdfForPayment } from "@/lib/receipts/buildReceiptPdfForPaym
 import { correnteDueDateForMonth, extraordinariaDefaultDueDate } from "@/lib/billing/dueDates";
 import { splitTotalCentsByPermilages } from "@/lib/billing/splitByPermilage";
 import { parseEurosToCents } from "@/lib/money";
+import { parseOptionalPtIban } from "@/lib/iban";
 import { parseOptionalPtTaxId } from "@/lib/taxId";
 import { getTreasuryAccountId } from "@/lib/treasury/resolveAccount";
 import type { ExpenseFunding, TreasuryBookKind } from "@/lib/treasury/types";
@@ -42,6 +43,23 @@ function parseTreasuryBookKind(v: string): TreasuryBookKind | null {
 function parseExpenseFunding(v: string): ExpenseFunding | null {
   if (v === "numerario" || v === "conta_ordem" || v === "conta_prazo" || v === "morador") return v;
   return null;
+}
+
+export async function updateCondominiumIbanAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const payment_iban = parseOptionalPtIban(String(formData.get("payment_iban") ?? ""));
+
+    const { error } = await supabase.from("condominiums").update({ payment_iban }).eq("id", cid);
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/admin");
+    revalidatePath("/minha-conta");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao guardar IBAN." };
+  }
 }
 
 export async function createUnitAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {

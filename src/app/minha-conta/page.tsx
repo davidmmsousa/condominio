@@ -11,7 +11,21 @@ export default async function MinhaContaPage() {
 
   if (!user) return null;
 
-  const { data: profile } = await supabase.from("profiles").select("unit_id").eq("user_id", user.id).maybeSingle();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("unit_id, condominium_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  let paymentIban: string | null = null;
+  if (profile?.condominium_id) {
+    const { data: condo } = await supabase
+      .from("condominiums")
+      .select("payment_iban")
+      .eq("id", profile.condominium_id)
+      .maybeSingle();
+    paymentIban = condo?.payment_iban?.trim() || null;
+  }
 
   const unitId = profile?.unit_id;
   const { data: unitRow } = unitId
@@ -21,7 +35,7 @@ export default async function MinhaContaPage() {
 
   if (!unitId) {
     return (
-      <ResidentPortalShell>
+      <ResidentPortalShell paymentIban={paymentIban}>
         <main className="page-shell page-shell--portal">
           <h1 className="page-title">Minha conta</h1>
           <p className="page-lead">
@@ -70,7 +84,7 @@ export default async function MinhaContaPage() {
   });
 
   return (
-    <ResidentPortalShell>
+    <ResidentPortalShell paymentIban={paymentIban}>
     <main className="page-shell page-shell--portal">
       <h1 className="page-title">Minha conta</h1>
       <p className="page-lead">

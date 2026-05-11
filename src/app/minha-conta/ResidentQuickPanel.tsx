@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 
-const CONDOMINIUM_IBAN = "PT50003600219910006353214";
-
 const EMERGENCY_CONTACTS = [
   {
     id: "edp",
@@ -28,13 +26,15 @@ const EMERGENCY_CONTACTS = [
   },
 ] as const;
 
-export function ResidentQuickPanel() {
+export function ResidentQuickPanel({ paymentIban }: { paymentIban: string | null }) {
   const [ibanVisible, setIbanVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const iban = paymentIban?.trim() || null;
 
   async function copyIban() {
+    if (!iban) return;
     try {
-      await navigator.clipboard.writeText(CONDOMINIUM_IBAN);
+      await navigator.clipboard.writeText(iban);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -47,18 +47,24 @@ export function ResidentQuickPanel() {
       <section className="resident-quick-panel__card">
         <h2 className="resident-quick-panel__title">Pagamentos</h2>
         <p className="resident-quick-panel__hint">IBAN do condomínio para transferências de quotas.</p>
-        <button
-          type="button"
-          className="resident-quick-panel__action"
-          aria-expanded={ibanVisible}
-          onClick={() => setIbanVisible((v) => !v)}
-        >
-          {ibanVisible ? "Ocultar IBAN" : "Ver IBAN"}
-        </button>
-        {ibanVisible ? (
+        {iban ? (
+          <button
+            type="button"
+            className="resident-quick-panel__action"
+            aria-expanded={ibanVisible}
+            onClick={() => setIbanVisible((v) => !v)}
+          >
+            {ibanVisible ? "Ocultar IBAN" : "Ver IBAN"}
+          </button>
+        ) : (
+          <p className="resident-quick-panel__hint" style={{ marginBottom: 0 }}>
+            IBAN ainda não configurado pela administração.
+          </p>
+        )}
+        {iban && ibanVisible ? (
           <div className="resident-quick-panel__iban-block">
             <p className="resident-quick-panel__iban" id="condominio-iban">
-              {CONDOMINIUM_IBAN}
+              {iban}
             </p>
             <button type="button" className="btn resident-quick-panel__copy" onClick={copyIban}>
               {copied ? "Copiado" : "Copiar IBAN"}
