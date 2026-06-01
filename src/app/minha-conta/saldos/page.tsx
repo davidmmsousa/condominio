@@ -27,7 +27,7 @@ export default async function SaldosPage() {
     );
   }
 
-  const { openCents, charges } = await loadResidentAccountSnapshot(supabase, portal.unitId);
+  const { openCents, upcomingCents, charges } = await loadResidentAccountSnapshot(supabase, portal.unitId);
 
   return (
     <ResidentPortalShell paymentIban={portal.paymentIban}>

@@ -24,7 +24,8 @@ export function GenerateQuotasForm({ disabled }: { disabled: boolean }) {
       <h2 style={{ fontSize: 18, margin: 0 }}>Gerar quotas do mês (todas as frações)</h2>
       <p style={{ margin: 0, fontSize: 14, color: "#555", maxWidth: 560 }}>
         O valor mensal global é repartido pelas permilagens (restos distribuídos). Vencimento:{" "}
-        <strong>dia 8</strong> de cada mês (regra MVP).
+        <strong>dia 8</strong> de cada mês (regra MVP). Gera um mês de cada vez; se alguém pagou o ano antecipadamente,
+        ao gerar cada mês as alocações desse pagamento são actualizadas automaticamente.
       </p>
       <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
         Mês de referência

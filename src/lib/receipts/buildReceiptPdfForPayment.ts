@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
+import {
+  correnteReceiptLineLabel,
+  formatReceiptPeriodSummary,
+} from "@/lib/receipts/receiptPeriodSummary";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
 
 function monthLabelPt(isoDate: string | null | undefined): string {
@@ -77,27 +81,46 @@ export async function buildReceiptPdfForPayment(
 
   if (aErr) throw new Error(aErr.message);
 
-  const lines: Array<{ label: string; amountCents: number }> = [];
   const monthKeys: string[] = [];
+  const correnteAllocs: Array<{ month: string; amountCents: number }> = [];
+  const otherLines: Array<{ label: string; amountCents: number }> = [];
 
   for (const row of allocs ?? []) {
     const applied = row.applied_cents as number;
     const ch = row.charges as unknown as ChargeEmbed | null;
     if (!ch || applied <= 0) continue;
-    let label: string;
+
     if (ch.kind === "corrente" && ch.reference_month) {
-      label = `Quota ${monthLabelPt(ch.reference_month)}`;
-      monthKeys.push(ch.reference_month.slice(0, 10));
-    } else if (ch.kind === "extraordinaria") {
-      const t = ch.charge_projects?.title?.trim();
-      label = t ? `Extraordinária — ${t}` : "Cobrança extraordinária";
-    } else {
-      label = "Cobrança";
+      const month = ch.reference_month.slice(0, 10);
+      monthKeys.push(month);
+      correnteAllocs.push({ month, amountCents: applied });
+      continue;
     }
-    lines.push({ label, amountCents: applied });
+
+    if (ch.kind === "extraordinaria") {
+      const t = ch.charge_projects?.title?.trim();
+      otherLines.push({
+        label: t ? `Extraordinária — ${t}` : "Cobrança extraordinária",
+        amountCents: applied,
+      });
+    } else {
+      otherLines.push({ label: "Cobrança", amountCents: applied });
+    }
   }
 
-  const allocatedSum = lines.reduce((s, l) => s + l.amountCents, 0);
+  const lines: Array<{ label: string; amountCents: number }> = [];
+  const groupedCorrenteLabel = correnteReceiptLineLabel(monthKeys);
+  if (groupedCorrenteLabel) {
+    const correnteSum = correnteAllocs.reduce((s, a) => s + a.amountCents, 0);
+    lines.push({ label: groupedCorrenteLabel, amountCents: correnteSum });
+  } else {
+    for (const a of correnteAllocs) {
+      lines.push({ label: `Quota ${monthLabelPt(a.month)}`, amountCents: a.amountCents });
+    }
+  }
+  lines.push(...otherLines);
+
+  const allocatedSum = correnteAllocs.reduce((s, a) => s + a.amountCents, 0) + otherLines.reduce((s, l) => s + l.amountCents, 0);
   const remainder = p.amount_cents - allocatedSum;
   if (remainder > 0) {
     lines.push({
@@ -113,16 +136,10 @@ export async function buildReceiptPdfForPayment(
     });
   }
 
-  const uniqueMonths = [...new Set(monthKeys)].sort();
-  let periodSummary: string | undefined;
-  if (uniqueMonths.length === 1) {
-    periodSummary = `Período coberto: ${monthLabelPt(uniqueMonths[0])}.`;
-  } else if (uniqueMonths.length > 1) {
-    const labels = uniqueMonths.map(monthLabelPt).filter(Boolean);
-    periodSummary = `Períodos cobertos: ${labels.join(", ")}.`;
-  } else if (allocatedSum > 0) {
+  let periodSummary = formatReceiptPeriodSummary(monthKeys);
+  if (!periodSummary && allocatedSum > 0) {
     periodSummary = "Inclui pagamentos aplicados a cobranças sem mês de referência.";
-  } else {
+  } else if (!periodSummary) {
     periodSummary = "Pagamento registado sem alocação a quotas mensais.";
   }
 

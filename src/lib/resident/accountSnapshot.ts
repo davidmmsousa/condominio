@@ -1,3 +1,4 @@
+import { isChargeDueForArrears } from "@/lib/billing/chargeDue";
 import { computeFifoAppliedPerCharge } from "@/lib/billing/fifoApply";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -9,6 +10,8 @@ export type ResidentChargeRow = {
   amount_cents: number;
   paid: number;
   open: number;
+  /** false = quota ainda não vencida (não entra no saldo em dívida). */
+  isDue: boolean;
 };
 
 export type ResidentPaymentRow = {
@@ -22,7 +25,12 @@ export type ResidentPaymentRow = {
 export async function loadResidentAccountSnapshot(
   supabase: SupabaseClient,
   unitId: string,
-): Promise<{ openCents: number; charges: ResidentChargeRow[]; payments: ResidentPaymentRow[] }> {
+): Promise<{
+  openCents: number;
+  upcomingCents: number;
+  charges: ResidentChargeRow[];
+  payments: ResidentPaymentRow[];
+}> {
   const { data: charges } = await supabase
     .from("charges")
     .select("id, amount_cents, due_date, kind, reference_month")
@@ -50,14 +58,19 @@ export async function loadResidentAccountSnapshot(
   );
 
   let openCents = 0;
+  let upcomingCents = 0;
   const chargeRows: ResidentChargeRow[] = chargeList.map((c) => {
     const paid = appliedByCharge.get(c.id) ?? 0;
     const open = Math.max(0, c.amount_cents - paid);
-    openCents += open;
-    return { ...c, paid, open };
+    const isDue = isChargeDueForArrears(c.due_date);
+    if (open > 0) {
+      if (isDue) openCents += open;
+      else upcomingCents += open;
+    }
+    return { ...c, paid, open, isDue };
   });
 
-  return { openCents, charges: chargeRows, payments: paymentList as ResidentPaymentRow[] };
+  return { openCents, upcomingCents, charges: chargeRows, payments: paymentList as ResidentPaymentRow[] };
 }
 
 export function receiptNumberForPayment(paymentId: string, paidAtIso: string): string {

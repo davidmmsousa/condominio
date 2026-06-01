@@ -459,9 +459,21 @@ export async function generateMonthlyQuotasAction(_prev: ActionState | null, for
       }
       throw new Error(insErr.message);
     }
+
+    const { data: payUnits } = await supabase.from("payments").select("unit_id").eq("condominium_id", cid);
+    const unitIdsToReconcile = [...new Set((payUnits ?? []).map((row) => row.unit_id as string))];
+    for (const uid of unitIdsToReconcile) {
+      await reconcilePaymentAllocationsForUnit(supabase, { condominiumId: cid, unitId: uid });
+    }
+
     revalidatePath("/admin/cobrancas");
     revalidatePath("/admin/pagamentos/tabela-geral");
-    return { ok: true, message: `Geradas ${rows.length} quotas para ${reference_month.slice(0, 7)}.` };
+    revalidatePath("/admin/contas-correntes");
+    let message = `Geradas ${rows.length} quotas para ${reference_month.slice(0, 7)}.`;
+    if (unitIdsToReconcile.length) {
+      message += ` Alocações de pagamentos actualizadas em ${unitIdsToReconcile.length} fração(ões) com movimentos.`;
+    }
+    return { ok: true, message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao gerar quotas." };
   }

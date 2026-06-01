@@ -30,7 +30,7 @@ export default async function MinhaContaPage() {
     );
   }
 
-  const { openCents } = await loadResidentAccountSnapshot(supabase, portal.unitId);
+  const { openCents, upcomingCents } = await loadResidentAccountSnapshot(supabase, portal.unitId);
 
   return (
     <ResidentPortalShell paymentIban={portal.paymentIban}>
