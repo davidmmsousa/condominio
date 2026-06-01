@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getReceiptCondominiumTaxId } from "@/lib/receipts/receiptCondominiumTaxId";
 import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
 
@@ -131,6 +132,7 @@ export async function buildReceiptPdfForPayment(
 
   const pdf = await renderReceiptPdf({
     condominiumHeaderSubline: getReceiptHeaderSubline(),
+    condominiumTaxId: getReceiptCondominiumTaxId(),
     condominiumName: condo?.name?.trim() || "Condomínio",
     receiptNumber,
     issuedAtIso: p.paid_at,

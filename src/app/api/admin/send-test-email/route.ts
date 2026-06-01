@@ -1,4 +1,5 @@
 import { sendGmailMessage } from "@/lib/gmail/gmail";
+import { getReceiptCondominiumTaxId } from "@/lib/receipts/receiptCondominiumTaxId";
 import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
 
   const pdfBytes = await renderReceiptPdf({
     condominiumHeaderSubline: getReceiptHeaderSubline(),
+    condominiumTaxId: getReceiptCondominiumTaxId(),
     condominiumName: "Condomínio Rua Vincennes",
     receiptNumber: "2026-00001",
     issuedAtIso: new Date().toISOString(),
