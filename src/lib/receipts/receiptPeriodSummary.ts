@@ -5,6 +5,13 @@ function monthLabelPt(isoDate: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function monthNameOnly(isoDate: string): string {
+  const d = new Date(`${isoDate.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return "";
+  const s = d.toLocaleDateString("pt-PT", { month: "long" });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function monthIndexFromRef(ymd: string): number {
   const y = Number(ymd.slice(0, 4));
   const m = Number(ymd.slice(5, 7));
@@ -22,42 +29,32 @@ function isFullCalendarYear(months: string[]): boolean {
   return true;
 }
 
-/** Texto do período coberto no recibo (quotas correntes com mês de referência). */
+function formatMonthsListPt(monthsYmd: string[]): string {
+  const names = monthsYmd.map(monthNameOnly).filter(Boolean);
+  if (names.length === 0) return "";
+  if (names.length === 1) return names[0];
+  return `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`;
+}
+
+/** Texto do período coberto no recibo, com lista explícita de todos os meses pagos. */
 export function formatReceiptPeriodSummary(monthKeys: string[]): string | undefined {
   const unique = [...new Set(monthKeys.map((k) => k.slice(0, 10)))].sort();
   if (unique.length === 0) return undefined;
 
+  const monthsList = formatMonthsListPt(unique);
+  const indices = unique.map(monthIndexFromRef);
+  const isConsecutive = indices.every((v, i) => i === 0 || v === indices[i - 1] + 1);
+
+  let head: string;
   if (unique.length === 1) {
-    return `Período coberto: ${monthLabelPt(unique[0])}.`;
+    head = `Período coberto: ${monthLabelPt(unique[0])}.`;
+  } else if (isConsecutive && isFullCalendarYear(unique)) {
+    head = `Período coberto: quotas de janeiro a dezembro de ${unique[0].slice(0, 4)} (${unique.length} meses).`;
+  } else if (isConsecutive) {
+    head = `Período coberto: quotas de ${monthLabelPt(unique[0])} a ${monthLabelPt(unique[unique.length - 1])} (${unique.length} meses).`;
+  } else {
+    head = `Período coberto: ${unique.length} meses.`;
   }
 
-  const indices = unique.map(monthIndexFromRef);
-  const isConsecutive = indices.every((v, i) => i === 0 || v === indices[i - 1] + 1);
-
-  if (isConsecutive) {
-    const year = unique[0].slice(0, 4);
-    if (isFullCalendarYear(unique)) {
-      return `Período coberto: quotas de janeiro a dezembro de ${year}.`;
-    }
-    return `Período coberto: quotas de ${monthLabelPt(unique[0])} a ${monthLabelPt(unique[unique.length - 1])}.`;
-  }
-
-  const labels = unique.map(monthLabelPt).filter(Boolean);
-  return `Períodos cobertos: ${labels.join(", ")}.`;
-}
-
-/** Uma linha agregada no detalhe do recibo quando há vários meses consecutivos (ex.: ano completo). */
-export function correnteReceiptLineLabel(monthKeys: string[]): string | null {
-  const unique = [...new Set(monthKeys.map((k) => k.slice(0, 10)))].sort();
-  if (unique.length < 3) return null;
-
-  const indices = unique.map(monthIndexFromRef);
-  const isConsecutive = indices.every((v, i) => i === 0 || v === indices[i - 1] + 1);
-  if (!isConsecutive) return null;
-
-  const year = unique[0].slice(0, 4);
-  if (isFullCalendarYear(unique)) {
-    return `Quotas mensais — janeiro a dezembro de ${year}`;
-  }
-  return `Quotas mensais — ${monthLabelPt(unique[0])} a ${monthLabelPt(unique[unique.length - 1])}`;
+  return `${head}\nMeses pagos: ${monthsList}.`;
 }

@@ -59,7 +59,11 @@ function ReceiptDoc(input: ReceiptPdfInput) {
 
         {input.periodSummary ? (
           <View style={styles.section}>
-            <Text style={{ fontSize: 10, color: "#333" }}>{input.periodSummary}</Text>
+            {input.periodSummary.split("\n").map((line, i) => (
+              <Text key={i} style={{ fontSize: 10, color: "#333", marginTop: i > 0 ? 4 : 0 }}>
+                {line}
+              </Text>
+            ))}
           </View>
         ) : null}
 

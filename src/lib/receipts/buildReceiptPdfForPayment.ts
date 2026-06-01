@@ -1,9 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { computeFifoAppliedPerPayment, type ChargeFifo } from "@/lib/billing/fifoApply";
 import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
-import {
-  correnteReceiptLineLabel,
-  formatReceiptPeriodSummary,
-} from "@/lib/receipts/receiptPeriodSummary";
+import { formatReceiptPeriodSummary } from "@/lib/receipts/receiptPeriodSummary";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
 
 function monthLabelPt(isoDate: string | null | undefined): string {
@@ -14,9 +12,12 @@ function monthLabelPt(isoDate: string | null | undefined): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-type ChargeEmbed = {
+type UnitChargeRow = {
+  id: string;
   reference_month: string | null;
   kind: string;
+  due_date: string;
+  amount_cents: number;
   charge_projects: { title: string } | null;
 };
 
@@ -31,8 +32,8 @@ type PaymentRow = {
 };
 
 /**
- * Gera o PDF do recibo para um pagamento já persistido (com alocações).
- * Usado pelo GET /api/admin/receipts/[id] e pelo envio automático Gmail.
+ * Gera o PDF do recibo para um pagamento já persistido.
+ * O detalhe e o descritivo usam imputação FIFO por fração (inclui ano pago antecipadamente).
  */
 export async function buildReceiptPdfForPayment(
   supabase: SupabaseClient,
@@ -74,26 +75,57 @@ export async function buildReceiptPdfForPayment(
   const residentEmail = resident?.email?.trim() || null;
   const payerTaxId = resident?.tax_id?.trim() || null;
 
-  const { data: allocs, error: aErr } = await supabase
-    .from("payment_allocations")
-    .select("applied_cents, charges ( reference_month, kind, charge_projects ( title ) )")
-    .eq("payment_id", paymentId);
+  const { data: unitCharges, error: chErr } = await supabase
+    .from("charges")
+    .select("id, reference_month, kind, due_date, amount_cents, charge_projects ( title )")
+    .eq("unit_id", p.unit_id)
+    .eq("condominium_id", condominiumId)
+    .order("due_date", { ascending: true });
 
-  if (aErr) throw new Error(aErr.message);
+  if (chErr) throw new Error(chErr.message);
 
-  const monthKeys: string[] = [];
-  const correnteAllocs: Array<{ month: string; amountCents: number }> = [];
+  const { data: unitPayments, error: payErr } = await supabase
+    .from("payments")
+    .select("id, amount_cents, paid_at")
+    .eq("unit_id", p.unit_id)
+    .eq("condominium_id", condominiumId)
+    .order("paid_at", { ascending: true });
+
+  if (payErr) throw new Error(payErr.message);
+
+  const chargeRows = (unitCharges ?? []) as unknown as UnitChargeRow[];
+  const fifoCharges: ChargeFifo[] = chargeRows.map((c) => ({
+    id: c.id,
+    amount_cents: c.amount_cents,
+    due_date: c.due_date,
+    kind: c.kind as "corrente" | "extraordinaria",
+  }));
+
+  const fifoByPayment = computeFifoAppliedPerPayment(
+    fifoCharges,
+    (unitPayments ?? []).map((row) => ({
+      id: row.id as string,
+      amount_cents: row.amount_cents as number,
+      paid_at: row.paid_at as string,
+    })),
+  );
+
+  const appliedToCharges = fifoByPayment.get(paymentId) ?? new Map<string, number>();
+  const chargeById = new Map(chargeRows.map((c) => [c.id, c]));
+
+  const correnteLines: Array<{ month: string; amountCents: number }> = [];
   const otherLines: Array<{ label: string; amountCents: number }> = [];
+  const monthKeys: string[] = [];
 
-  for (const row of allocs ?? []) {
-    const applied = row.applied_cents as number;
-    const ch = row.charges as unknown as ChargeEmbed | null;
-    if (!ch || applied <= 0) continue;
+  for (const [chargeId, applied] of appliedToCharges) {
+    if (applied <= 0) continue;
+    const ch = chargeById.get(chargeId);
+    if (!ch) continue;
 
     if (ch.kind === "corrente" && ch.reference_month) {
       const month = ch.reference_month.slice(0, 10);
       monthKeys.push(month);
-      correnteAllocs.push({ month, amountCents: applied });
+      correnteLines.push({ month, amountCents: applied });
       continue;
     }
 
@@ -108,19 +140,15 @@ export async function buildReceiptPdfForPayment(
     }
   }
 
-  const lines: Array<{ label: string; amountCents: number }> = [];
-  const groupedCorrenteLabel = correnteReceiptLineLabel(monthKeys);
-  if (groupedCorrenteLabel) {
-    const correnteSum = correnteAllocs.reduce((s, a) => s + a.amountCents, 0);
-    lines.push({ label: groupedCorrenteLabel, amountCents: correnteSum });
-  } else {
-    for (const a of correnteAllocs) {
-      lines.push({ label: `Quota ${monthLabelPt(a.month)}`, amountCents: a.amountCents });
-    }
-  }
+  correnteLines.sort((a, b) => a.month.localeCompare(b.month));
+
+  const lines: Array<{ label: string; amountCents: number }> = correnteLines.map((row) => ({
+    label: `Quota ${monthLabelPt(row.month)}`,
+    amountCents: row.amountCents,
+  }));
   lines.push(...otherLines);
 
-  const allocatedSum = correnteAllocs.reduce((s, a) => s + a.amountCents, 0) + otherLines.reduce((s, l) => s + l.amountCents, 0);
+  const allocatedSum = lines.reduce((s, l) => s + l.amountCents, 0);
   const remainder = p.amount_cents - allocatedSum;
   if (remainder > 0) {
     lines.push({
