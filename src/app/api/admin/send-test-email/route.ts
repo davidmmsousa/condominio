@@ -1,4 +1,5 @@
 import { sendGmailMessage } from "@/lib/gmail/gmail";
+import { getReceiptCondominiumTaxId } from "@/lib/receipts/receiptCondominiumTaxId";
 import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";

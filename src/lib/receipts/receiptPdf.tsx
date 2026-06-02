@@ -5,6 +5,8 @@ import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer
 export type ReceiptPdfInput = {
   /** Texto cinzento logo abaixo de "Recibo" (morada / identificação do prédio). */
   condominiumHeaderSubline?: string | null;
+  /** NIF do condomínio (emitente). */
+  condominiumTaxId?: string | null;
   condominiumName: string;
   receiptNumber: string;
   issuedAtIso: string;
@@ -42,6 +44,9 @@ function ReceiptDoc(input: ReceiptPdfInput) {
         <Text style={styles.muted}>
           {input.condominiumHeaderSubline?.trim() || input.condominiumName}
         </Text>
+        {input.condominiumTaxId?.trim() ? (
+          <Text style={styles.muted}>Contribuinte: {input.condominiumTaxId.trim()}</Text>
+        ) : null}
 
         <View style={styles.section}>
           <Text>Recibo nº: {input.receiptNumber}</Text>
@@ -83,12 +88,6 @@ function ReceiptDoc(input: ReceiptPdfInput) {
             <Text>{euros(input.amountCents)}</Text>
           </View>
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.muted}>
-            Este recibo é gerado automaticamente para registo interno do condomínio.
-          </Text>
-        </View>
       </Page>
     </Document>
   );
@@ -100,4 +99,3 @@ export async function renderReceiptPdf(input: ReceiptPdfInput): Promise<Uint8Arr
   const ab = await arrayBuffer(stream);
   return new Uint8Array(ab);
 }
-

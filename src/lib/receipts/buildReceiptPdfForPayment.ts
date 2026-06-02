@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeFifoAppliedPerPayment, type ChargeFifo } from "@/lib/billing/fifoApply";
+import { getReceiptCondominiumTaxId } from "@/lib/receipts/receiptCondominiumTaxId";
 import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
+import { inferProvisionalCorrenteMonths } from "@/lib/receipts/receiptInferMonths";
 import { formatReceiptPeriodSummary } from "@/lib/receipts/receiptPeriodSummary";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
 
@@ -142,14 +144,34 @@ export async function buildReceiptPdfForPayment(
 
   correnteLines.sort((a, b) => a.month.localeCompare(b.month));
 
+  let allocatedSum = correnteLines.reduce((s, r) => s + r.amountCents, 0) + otherLines.reduce((s, l) => s + l.amountCents, 0);
+  let remainder = p.amount_cents - allocatedSum;
+
+  if (remainder > 0 && correnteLines.length > 0) {
+    const amounts = [...new Set(correnteLines.map((r) => r.amountCents))];
+    if (amounts.length === 1) {
+      const provisional = inferProvisionalCorrenteMonths({
+        allocatedMonths: monthKeys,
+        remainderCents: remainder,
+        quotaCents: amounts[0]!,
+        paymentNote: p.note,
+      });
+      for (const row of provisional) {
+        monthKeys.push(row.month);
+        correnteLines.push(row);
+        allocatedSum += row.amountCents;
+      }
+      correnteLines.sort((a, b) => a.month.localeCompare(b.month));
+      remainder = p.amount_cents - allocatedSum;
+    }
+  }
+
   const lines: Array<{ label: string; amountCents: number }> = correnteLines.map((row) => ({
     label: `Quota ${monthLabelPt(row.month)}`,
     amountCents: row.amountCents,
   }));
   lines.push(...otherLines);
 
-  const allocatedSum = lines.reduce((s, l) => s + l.amountCents, 0);
-  const remainder = p.amount_cents - allocatedSum;
   if (remainder > 0) {
     lines.push({
       label: "Valor não aplicado a quotas (crédito / conta corrente)",
@@ -176,6 +198,7 @@ export async function buildReceiptPdfForPayment(
 
   const pdf = await renderReceiptPdf({
     condominiumHeaderSubline: getReceiptHeaderSubline(),
+    condominiumTaxId: getReceiptCondominiumTaxId(),
     condominiumName: condo?.name?.trim() || "Condomínio",
     receiptNumber,
     issuedAtIso: p.paid_at,
