@@ -3,7 +3,10 @@ import { computeFifoAppliedPerPayment, type ChargeFifo } from "@/lib/billing/fif
 import { getReceiptCondominiumTaxId } from "@/lib/receipts/receiptCondominiumTaxId";
 import { getReceiptHeaderSubline } from "@/lib/receipts/receiptHeaderSubline";
 import { inferProvisionalCorrenteMonths } from "@/lib/receipts/receiptInferMonths";
-import { formatReceiptPeriodSummary } from "@/lib/receipts/receiptPeriodSummary";
+import {
+  formatReceiptPeriodSummary,
+  sortReferenceMonthsChronologically,
+} from "@/lib/receipts/receiptPeriodSummary";
 import { renderReceiptPdf } from "@/lib/receipts/receiptPdf";
 
 function monthLabelPt(isoDate: string | null | undefined): string {
@@ -186,7 +189,8 @@ export async function buildReceiptPdfForPayment(
     });
   }
 
-  let periodSummary = formatReceiptPeriodSummary(monthKeys);
+  const sortedMonthKeys = sortReferenceMonthsChronologically(monthKeys);
+  let periodSummary = formatReceiptPeriodSummary(sortedMonthKeys);
   if (!periodSummary && allocatedSum > 0) {
     periodSummary = "Inclui pagamentos aplicados a cobranças sem mês de referência.";
   } else if (!periodSummary) {

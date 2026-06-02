@@ -5,13 +5,6 @@ function monthLabelPt(isoDate: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function monthNameOnly(isoDate: string): string {
-  const d = new Date(`${isoDate.slice(0, 10)}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return "";
-  const s = d.toLocaleDateString("pt-PT", { month: "long" });
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 function monthIndexFromRef(ymd: string): number {
   const y = Number(ymd.slice(0, 4));
   const m = Number(ymd.slice(5, 7));
@@ -29,16 +22,23 @@ function isFullCalendarYear(months: string[]): boolean {
   return true;
 }
 
-function formatMonthsListPt(monthsYmd: string[]): string {
-  const names = monthsYmd.map(monthNameOnly).filter(Boolean);
-  if (names.length === 0) return "";
-  if (names.length === 1) return names[0];
-  return `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`;
+/** Meses de referência (YYYY-MM-01) por ordem cronológica. */
+export function sortReferenceMonthsChronologically(monthKeys: string[]): string[] {
+  const unique = [...new Set(monthKeys.map((k) => k.slice(0, 10)))];
+  return unique.sort((a, b) => monthIndexFromRef(a) - monthIndexFromRef(b));
 }
 
-/** Texto do período coberto no recibo, com lista explícita de todos os meses pagos. */
+function formatMonthsListPt(monthsYmd: string[]): string {
+  const sorted = sortReferenceMonthsChronologically(monthsYmd);
+  const labels = sorted.map(monthLabelPt).filter(Boolean);
+  if (labels.length === 0) return "";
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(", ")} e ${labels[labels.length - 1]}`;
+}
+
+/** Texto do período coberto no recibo, com lista explícita de todos os meses pagos (por data). */
 export function formatReceiptPeriodSummary(monthKeys: string[]): string | undefined {
-  const unique = [...new Set(monthKeys.map((k) => k.slice(0, 10)))].sort();
+  const unique = sortReferenceMonthsChronologically(monthKeys);
   if (unique.length === 0) return undefined;
 
   const monthsList = formatMonthsListPt(unique);
@@ -56,5 +56,5 @@ export function formatReceiptPeriodSummary(monthKeys: string[]): string | undefi
     head = `Período coberto: ${unique.length} meses.`;
   }
 
-  return `${head}\nMeses pagos: ${monthsList}.`;
+  return `${head}\nMeses pagos (por ordem cronológica): ${monthsList}.`;
 }
