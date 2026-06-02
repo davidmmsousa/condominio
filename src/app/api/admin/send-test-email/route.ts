@@ -25,6 +25,7 @@ export async function POST(req: Request) {
 
   const pdfBytes = await renderReceiptPdf({
     condominiumHeaderSubline: getReceiptHeaderSubline(),
+    condominiumTaxId: getReceiptCondominiumTaxId(),
     condominiumName: "Condomínio Rua Vincennes",
     receiptNumber: "2026-00001",
     issuedAtIso: new Date().toISOString(),
