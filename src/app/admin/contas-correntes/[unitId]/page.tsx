@@ -1,5 +1,6 @@
 import { ReconcileUnitAllocationsButton } from "@/app/admin/contas-correntes/ReconcileUnitAllocationsButton";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
+import { isChargeDueForArrears } from "@/lib/billing/chargeDue";
 import { formatCents } from "@/lib/money";
 import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
@@ -14,7 +15,8 @@ type TimelineRow = {
   label: string;
   debit: number;
   credit: number;
-  balanceAfter: number;
+  balanceAfter: number | null;
+  upcoming: boolean;
 };
 
 function isUuid(s: string) {
@@ -80,6 +82,7 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
       label,
       debit: c.amount_cents,
       credit: 0,
+      upcoming: !isChargeDueForArrears(c.due_date),
     });
   }
 
@@ -93,6 +96,7 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
       label: method ? `Pagamento (${method})` : "Pagamento",
       debit: 0,
       credit: p.amount_cents,
+      upcoming: false,
     });
   }
 
@@ -101,11 +105,17 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
   const timeline: TimelineRow[] = [];
   let balance = 0;
   for (const r of raw) {
+    if (r.upcoming) {
+      timeline.push({ ...r, balanceAfter: null });
+      continue;
+    }
     balance += r.debit - r.credit;
     timeline.push({ ...r, balanceAfter: balance });
   }
 
-  const totalDebit = chRows.reduce((s, c) => s + c.amount_cents, 0);
+  const dueRows = chRows.filter((c) => isChargeDueForArrears(c.due_date));
+  const totalDebit = dueRows.reduce((s, c) => s + c.amount_cents, 0);
+  const upcomingTotal = chRows.reduce((s, c) => s + c.amount_cents, 0) - totalDebit;
   const totalCredit = payRows.reduce((s, p) => s + p.amount_cents, 0);
   const saldo = totalDebit - totalCredit;
 
@@ -120,7 +130,7 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
           <p className="page-eyebrow">Conta corrente</p>
           <h1 className="page-title">Fração {unit.code}</h1>
           <p className="page-lead">
-            Saldo positivo = o condómino deve ao condomínio (total das cobranças menos pagamentos registados).
+            Saldo positivo = o condómino deve ao condomínio (cobranças já vencidas menos pagamentos registados). As quotas de meses futuros ficam em «A vencer» e só entram no saldo no dia de vencimento; saldo negativo = pago adiantado.
           </p>
         </div>
         <Link href="/admin/pagamentos" className="btn btn--primary">
@@ -131,12 +141,16 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
 
       <div className="stat-grid">
         <div className="stat">
-          <p className="stat__label">Total cobranças</p>
+          <p className="stat__label">Cobranças vencidas</p>
           <p className="stat__value">{formatCents(totalDebit)}</p>
         </div>
         <div className="stat">
           <p className="stat__label">Total pagamentos</p>
           <p className="stat__value">{formatCents(totalCredit)}</p>
+        </div>
+        <div className="stat">
+          <p className="stat__label">A vencer</p>
+          <p className="stat__value">{formatCents(upcomingTotal)}</p>
         </div>
         <div className="stat">
           <p className="stat__label">Saldo</p>
@@ -177,11 +191,14 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
                 {timeline.map((r, idx) => (
                   <tr key={`${r.sort}-${r.tie}-${idx}`}>
                     <td className="nowrap">{r.dateLabel}</td>
-                    <td>{r.label}</td>
+                    <td>
+                      {r.label}
+                      {r.upcoming ? <span className="badge" style={{ marginLeft: 8 }}>A vencer</span> : null}
+                    </td>
                     <td className="num">{r.debit ? formatCents(r.debit) : "—"}</td>
                     <td className="num">{r.credit ? formatCents(r.credit) : "—"}</td>
                     <td className="num">
-                      <strong>{formatCents(r.balanceAfter)}</strong>
+                      {r.balanceAfter === null ? <span className="is-muted">—</span> : <strong>{formatCents(r.balanceAfter)}</strong>}
                     </td>
                   </tr>
                 ))}

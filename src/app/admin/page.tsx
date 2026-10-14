@@ -2,6 +2,7 @@ import { CondominiumIbanForm } from "@/app/admin/CondominiumIbanForm";
 import { Icon } from "@/components/ui/Icon";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
+import { isChargeDueForArrears } from "@/lib/billing/chargeDue";
 import { formatCents } from "@/lib/money";
 import Link from "next/link";
 import { ADMIN_NAV_GROUPS } from "./navItems";
@@ -35,13 +36,20 @@ export default async function AdminPage() {
     const { count } = await supabase.from("units").select("id", { count: "exact", head: true });
     unitCount = count ?? 0;
     const [{ data: ch }, { data: al }, { data: mv }] = await Promise.all([
-      supabase.from("charges").select("amount_cents"),
-      supabase.from("payment_allocations").select("applied_cents"),
+      supabase.from("charges").select("id, amount_cents, due_date"),
+      supabase.from("payment_allocations").select("charge_id, applied_cents"),
       supabase.from("treasury_movements").select("amount_cents"),
     ]);
+    const appliedByCharge = new Map<string, number>();
+    for (const a of al ?? []) {
+      appliedByCharge.set(a.charge_id as string, (appliedByCharge.get(a.charge_id as string) ?? 0) + (a.applied_cents as number));
+    }
+    // Só conta como dívida o que já venceu; quotas futuras (mesmo pagas adiantadamente) ficam de fora.
+    openCents = (ch ?? [])
+      .filter((c) => isChargeDueForArrears(c.due_date as string))
+      .reduce((sum, c) => sum + Math.max(0, (c.amount_cents as number) - (appliedByCharge.get(c.id as string) ?? 0)), 0);
     const sum = (rows: Array<Record<string, number>> | null, key: string) =>
-      (rows ?? []).reduce((a, r) => a + (r[key] ?? 0), 0);
-    openCents = sum(ch, "amount_cents") - sum(al, "applied_cents");
+      (rows ?? []).reduce((acc, r) => acc + (r[key] ?? 0), 0);
     treasuryCents = sum(mv, "amount_cents");
   } catch {
     /* indicadores são opcionais */
@@ -66,7 +74,7 @@ export default async function AdminPage() {
           <p className="stat__value">{unitCount}</p>
         </div>
         <div className="stat">
-          <p className="stat__label">Quotas em aberto</p>
+          <p className="stat__label">Quotas vencidas em aberto</p>
           <p className={`stat__value ${openCents && openCents > 0 ? "stat__value--negative" : "stat__value--positive"}`}>
             {openCents === null ? "—" : formatCents(openCents)}
           </p>
