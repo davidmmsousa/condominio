@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/ui/Icon";
 import type { ReactNode } from "react";
 
 export function AuthShell({
@@ -14,7 +15,8 @@ export function AuthShell({
   return (
     <div className="auth-shell">
       <div className="auth-shell__card">
-        <div style={{ textAlign: "left" }}>
+        <div className="auth-shell__head">
+          <BrandMark size="lg" />
           {eyebrow ? <div className="auth-shell__brand">{eyebrow}</div> : null}
           <h1 className="auth-shell__title">{title}</h1>
           {lead ? <p className="auth-shell__lead">{lead}</p> : null}

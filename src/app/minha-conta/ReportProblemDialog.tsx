@@ -71,7 +71,7 @@ export function ReportProblemDialog({ open, onClose }: { open: boolean; onClose:
         </p>
         {success ? (
           <>
-            <p className="resident-dialog__success" role="status">
+            <p className="alert alert--success" role="status">
               Reporte enviado. Obrigado.
             </p>
             <div className="resident-dialog__actions">
@@ -82,7 +82,7 @@ export function ReportProblemDialog({ open, onClose }: { open: boolean; onClose:
           </>
         ) : (
           <>
-            <label className="resident-dialog__label">
+            <label className="field">
               Título
               <input
                 name="title"
@@ -91,10 +91,9 @@ export function ReportProblemDialog({ open, onClose }: { open: boolean; onClose:
                 disabled={busy}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="resident-dialog__input"
               />
             </label>
-            <label className="resident-dialog__label">
+            <label className="field">
               Descrição
               <textarea
                 name="description"
@@ -104,10 +103,9 @@ export function ReportProblemDialog({ open, onClose }: { open: boolean; onClose:
                 disabled={busy}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="resident-dialog__textarea"
               />
             </label>
-            <label className="resident-dialog__label">
+            <label className="field">
               Fotografias (opcional, até 4)
               <input
                 type="file"
@@ -115,11 +113,10 @@ export function ReportProblemDialog({ open, onClose }: { open: boolean; onClose:
                 accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
                 multiple
                 disabled={busy}
-                className="resident-dialog__file"
               />
             </label>
             {error ? (
-              <p className="resident-dialog__error" role="alert">
+              <p className="alert alert--error" role="alert">
                 {error}
               </p>
             ) : null}
@@ -127,7 +124,7 @@ export function ReportProblemDialog({ open, onClose }: { open: boolean; onClose:
               <button type="button" className="btn" onClick={handleClose} disabled={busy}>
                 Cancelar
               </button>
-              <button type="submit" className="btn resident-dialog__submit" disabled={busy}>
+              <button type="submit" className="btn btn--primary" disabled={busy}>
                 {busy ? "A enviar…" : "Enviar reporte"}
               </button>
             </div>

@@ -1,3 +1,4 @@
+import { Icon } from "@/components/ui/Icon";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
 import { GenerateQuotasForm } from "./GenerateQuotasForm";
@@ -24,41 +25,64 @@ export default async function CobrancasAdminPage() {
   const list = (charges ?? []) as unknown as CRow[];
 
   return (
-    <main style={{ paddingTop: 24 }}>
-      <h1 style={{ marginTop: 0 }}>Cobranças (conta corrente)</h1>
-      <GenerateQuotasForm disabled={!units?.length} />
-      <ManualChargeForm units={units ?? []} />
-      <h2 style={{ fontSize: 18 }}>Últimas cobranças</h2>
-      {!list.length ? (
-        <p style={{ color: "#555" }}>Sem cobranças ainda.</p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                <th style={{ padding: "8px 6px" }}>Fração</th>
-                <th style={{ padding: "8px 6px" }}>Tipo</th>
-                <th style={{ padding: "8px 6px" }}>Valor</th>
-                <th style={{ padding: "8px 6px" }}>Vencimento</th>
-                <th style={{ padding: "8px 6px" }}>Referência</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((c) => (
-                <tr key={c.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "8px 6px" }}>{c.units?.code ?? "—"}</td>
-                  <td style={{ padding: "8px 6px" }}>{c.kind}</td>
-                  <td style={{ padding: "8px 6px" }}>{formatCents(c.amount_cents)}</td>
-                  <td style={{ padding: "8px 6px" }}>{c.due_date}</td>
-                  <td style={{ padding: "8px 6px", color: "#555" }}>
-                    {c.reference_month ? c.reference_month.slice(0, 7) : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <main>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Financeiro</p>
+          <h1 className="page-title">Cobranças</h1>
+          <p className="page-lead">Gera as quotas do mês ou regista cobranças avulsas na conta corrente das frações.</p>
         </div>
-      )}
+      </header>
+
+      <div className="card-grid">
+        <section className="card">
+          <GenerateQuotasForm disabled={!units?.length} />
+        </section>
+        <section className="card">
+          <ManualChargeForm units={units ?? []} />
+        </section>
+      </div>
+
+      <section className="section">
+        <h2 className="section__title">Últimas cobranças</h2>
+        {!list.length ? (
+          <div className="empty">
+            <Icon name="receipt" size={28} />
+            Sem cobranças ainda.
+          </div>
+        ) : (
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Fração</th>
+                  <th>Tipo</th>
+                  <th className="num">Valor</th>
+                  <th>Vencimento</th>
+                  <th>Referência</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <strong>{c.units?.code ?? "—"}</strong>
+                    </td>
+                    <td>
+                      <span className={c.kind === "extraordinaria" ? "badge badge--warning" : "badge"}>
+                        {c.kind === "extraordinaria" ? "Extraordinária" : c.kind === "corrente" ? "Quota" : c.kind}
+                      </span>
+                    </td>
+                    <td className="num">{formatCents(c.amount_cents)}</td>
+                    <td className="nowrap">{c.due_date}</td>
+                    <td className="is-muted">{c.reference_month ? c.reference_month.slice(0, 7) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

@@ -65,34 +65,31 @@ export function RedefinirPasswordForm() {
   }
 
   if (checking) {
-    return (
-      <p style={{ margin: 0, color: "#64748b", fontSize: 15 }}>
-        A validar sessão de recuperação…
-      </p>
-    );
+    return <p className="muted">A validar sessão de recuperação…</p>;
   }
 
   if (!sessionOk) {
     return (
-      <div>
-        <p style={{ color: "#b00020" }}>
-          Este link já não é válido ou expirou. Volta a pedir recuperação ou entra normamente com a tua password.
+      <div className="stack">
+        <p className="alert alert--error">
+          Este link já não é válido ou expirou. Volta a pedir recuperação ou entra normalmente com a tua password.
         </p>
-        <p>
-          <Link href="/entrar/recuperar">Pedir novo link</Link>
-          {" · "}
-          <Link href="/entrar">Ir para entrar</Link>
+        <p className="row">
+          <Link href="/entrar/recuperar" className="btn btn--primary">
+            Pedir novo link
+          </Link>
+          <Link href="/entrar" className="btn">
+            Ir para entrar
+          </Link>
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 16, width: "100%", maxWidth: "100%", paddingTop: 4 }}>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>
-          Nova palavra-passe (mín. 8 caracteres)
-        </span>
+    <form onSubmit={onSubmit} className="form">
+      <label className="field">
+        Nova palavra-passe (mín. 8 caracteres)
         <input
           type="password"
           autoComplete="new-password"
@@ -101,16 +98,10 @@ export function RedefinirPasswordForm() {
           required
           minLength={8}
           disabled={loading}
-          style={{
-            padding: "12px 14px",
-            borderRadius: 10,
-            border: "1px solid #cbd5e1",
-            fontSize: 16,
-          }}
         />
       </label>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Repetir palavra-passe</span>
+      <label className="field">
+        Repetir palavra-passe
         <input
           type="password"
           autoComplete="new-password"
@@ -119,35 +110,14 @@ export function RedefinirPasswordForm() {
           required
           minLength={8}
           disabled={loading}
-          style={{
-            padding: "12px 14px",
-            borderRadius: 10,
-            border: "1px solid #cbd5e1",
-            fontSize: 16,
-          }}
         />
       </label>
       {error ? (
-        <p role="alert" style={{ color: "#b00020", margin: 0, fontSize: 14 }}>
+        <p role="alert" className="alert alert--error">
           {error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={loading}
-        style={{
-          marginTop: 4,
-          padding: "14px 16px",
-          borderRadius: 10,
-          border: "none",
-          background: loading ? "#94a3b8" : "linear-gradient(180deg,#1e293b,#0f172a)",
-          color: "#fff",
-          fontSize: 16,
-          fontWeight: 600,
-          cursor: loading ? "not-allowed" : "pointer",
-          boxShadow: loading ? undefined : "0 8px 24px rgba(15,23,42,0.18)",
-        }}
-      >
+      <button type="submit" disabled={loading} className="btn btn--primary btn--lg btn--block">
         {loading ? "A guardar…" : "Guardar nova palavra-passe"}
       </button>
     </form>

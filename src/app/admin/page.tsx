@@ -1,7 +1,9 @@
 import { CondominiumIbanForm } from "@/app/admin/CondominiumIbanForm";
+import { Icon } from "@/components/ui/Icon";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import Link from "next/link";
+import { ADMIN_NAV_GROUPS } from "./navItems";
 
 export default async function AdminPage() {
   const supabase = await createServerRouteSupabaseClient();
@@ -27,60 +29,41 @@ export default async function AdminPage() {
 
   return (
     <main>
-      <h1 className="page-title">Administração</h1>
-      <p className="page-lead" style={{ marginBottom: 0 }}>
-        Configura frações, moradores, gera quotas mensais e regista pagamentos. Tudo fica na base Supabase com regras
-        de acesso (RLS).
-      </p>
-      <div className="admin-tile-grid">
-        <Link href="/admin/unidades" className="admin-tile">
-          <strong>Frações</strong>
-          <span>Códigos e permilagens</span>
-        </Link>
-        <Link href="/admin/moradores" className="admin-tile">
-          <strong>Moradores</strong>
-          <span>Contactos por fração</span>
-        </Link>
-        <Link href="/admin/cobrancas" className="admin-tile">
-          <strong>Cobranças</strong>
-          <span>Quotas e extraordinárias</span>
-        </Link>
-        <Link href="/admin/pagamentos" className="admin-tile">
-          <strong>Pagamentos</strong>
-          <span>Alocação automática</span>
-        </Link>
-        <Link href="/admin/fundo-caixa" className="admin-tile">
-          <strong>Fundo de caixa</strong>
-          <span>Numerário, banco, prazo e movimentos</span>
-        </Link>
-        <Link href="/admin/contas-correntes" className="admin-tile">
-          <strong>Contas correntes</strong>
-          <span>Extrato por fração</span>
-        </Link>
-        <Link href="/admin/despesas" className="admin-tile">
-          <strong>Despesas</strong>
-          <span>Rubricas e faturas (água, luz, …)</span>
-        </Link>
-        <Link href="/admin/relatorios" className="admin-tile">
-          <strong>Relatórios</strong>
-          <span>CSV, relatório final e novo ano operacional</span>
-        </Link>
-      </div>
-      <section
-        style={{
-          marginTop: 36,
-          padding: 20,
-          borderRadius: 12,
-          border: "1px solid #e2e8f0",
-          maxWidth: 560,
-          background: "#fafafa",
-        }}
-      >
-        <h2 className="page-title" style={{ fontSize: "1.15rem", marginBottom: 8 }}>
-          IBAN (portal morador)
-        </h2>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Painel</p>
+          <h1 className="page-title">Administração</h1>
+          <p className="page-lead">
+            Configura frações e moradores, gera quotas mensais e regista pagamentos. Os dados ficam na base Supabase
+            com regras de acesso (RLS).
+          </p>
+        </div>
+      </header>
+
+      {ADMIN_NAV_GROUPS.map((group) => (
+        <section key={group.title} className="admin-group" aria-label={group.title}>
+          <h2 className="admin-group__title">{group.title}</h2>
+          <div className="admin-tile-grid">
+            {group.items.map((item) => (
+              <Link key={item.href} href={item.href} className="admin-tile">
+                <span className="admin-tile__icon">
+                  <Icon name={item.icon} size={22} />
+                </span>
+                <span className="admin-tile__body">
+                  <strong>{item.label}</strong>
+                  <span className="admin-tile__desc">{item.description}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <section className="card card--narrow section">
+        <h2 className="card__title">IBAN do portal do morador</h2>
+        <p className="card__lead">Aparece no portal quando o morador escolhe «Ver IBAN».</p>
         {ibanLoadError ? (
-          <p style={{ color: "#92400e", fontSize: 14, lineHeight: 1.5 }}>{ibanLoadError}</p>
+          <p className="alert alert--warning">{ibanLoadError}</p>
         ) : (
           <CondominiumIbanForm currentIban={paymentIban} />
         )}

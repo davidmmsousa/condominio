@@ -1,6 +1,12 @@
+import { BrandMark, Icon } from "@/components/ui/Icon";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Administrador",
+  resident: "Morador",
+};
 
 export async function AuthHeader() {
   const supabase = await createServerRouteSupabaseClient();
@@ -18,33 +24,50 @@ export async function AuthHeader() {
     roleLabel = profile?.role ?? null;
   }
 
+  const initial = (user?.email ?? "?").trim().charAt(0) || "?";
+
   return (
     <header className="app-header">
       <div className="app-header__left">
         <Link href="/" className="app-brand">
+          <BrandMark />
           Condomínio
         </Link>
         <nav className="app-header__nav" aria-label="Navegação principal">
           {user ? (
             <>
               {roleLabel === "admin" ? (
-                <Link href="/admin">Admin</Link>
+                <Link href="/admin">
+                  <Icon name="shield" size={16} />
+                  Administração
+                </Link>
               ) : null}
               {roleLabel === "resident" ? (
-                <Link href="/minha-conta">Minha conta</Link>
+                <Link href="/minha-conta">
+                  <Icon name="user" size={16} />
+                  Minha conta
+                </Link>
               ) : null}
             </>
           ) : (
-            <Link href="/entrar">Entrar</Link>
+            <Link href="/entrar">
+              <Icon name="user" size={16} />
+              Entrar
+            </Link>
           )}
         </nav>
       </div>
       {user ? (
         <div className="app-header__meta">
-          <span>
-            {user.email}
-            {roleLabel ? ` · ${roleLabel}` : ""}
-          </span>
+          <div className="user-chip">
+            <span className="user-chip__avatar" aria-hidden="true">
+              {initial}
+            </span>
+            <span className="user-chip__text">
+              <span className="user-chip__email">{user.email}</span>
+              {roleLabel ? <span className="user-chip__role">{ROLE_LABELS[roleLabel] ?? roleLabel}</span> : null}
+            </span>
+          </div>
           <LogoutButton />
         </div>
       ) : null}

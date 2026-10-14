@@ -2,6 +2,7 @@
 
 import { extractExpenseInvoiceTextFromFile } from "@/lib/ocr/extractExpenseInvoiceText.client";
 import { parseExpenseInvoiceText, type ExpenseOcrDraft } from "@/lib/ocr/parseExpenseInvoiceText";
+import { Icon } from "@/components/ui/Icon";
 import { useRef, useState } from "react";
 
 export function ExpenseInvoiceOcrPanel({
@@ -47,17 +48,9 @@ export function ExpenseInvoiceOcrPanel({
     : undefined;
 
   return (
-    <section
-      style={{
-        marginBottom: 24,
-        padding: 18,
-        borderRadius: 12,
-        border: "1px solid #e2e8f0",
-        background: "#f8fafc",
-      }}
-    >
-      <h3 style={{ margin: "0 0 8px", fontSize: 16 }}>Ler fatura (OCR)</h3>
-      <p style={{ margin: "0 0 14px", fontSize: 14, color: "#64748b", lineHeight: 1.5 }}>
+    <section className="card card--muted" style={{ marginBottom: 20 }}>
+      <h3 className="card__title">Ler fatura (OCR)</h3>
+      <p className="card__lead">
         Carrega PDF ou fotografia da fatura. O texto é lido no teu browser; revê os campos abaixo antes de guardar e
         escolhe a rubrica.
       </p>
@@ -68,34 +61,29 @@ export function ExpenseInvoiceOcrPanel({
         accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
         onChange={onFileChange}
         disabled={busy}
-        style={{ display: "none" }}
+        hidden
       />
 
-      <button
-        type="button"
-        className="btn"
-        disabled={busy}
-        onClick={() => inputRef.current?.click()}
-        style={{ marginBottom: 10 }}
-      >
-        {busy ? "A ler fatura…" : "Escolher ficheiro"}
-      </button>
+      <div className="row">
+        <button type="button" className="btn" disabled={busy} onClick={() => inputRef.current?.click()}>
+          <Icon name="scan" size={17} />
+          {busy ? "A ler fatura…" : "Escolher ficheiro"}
+        </button>
+        {fileLabel ? (
+          <span className="small muted">
+            Ficheiro: <strong>{fileLabel}</strong>
+          </span>
+        ) : null}
+        {busy && progress !== null ? <span className="badge">OCR: {progress}%</span> : null}
+      </div>
 
-      {fileLabel ? (
-        <p style={{ margin: "0 0 8px", fontSize: 13, color: "#475569" }}>
-          Ficheiro: <strong>{fileLabel}</strong>
+      {error ? (
+        <p className="alert alert--error" style={{ marginTop: 12 }}>
+          {error}
         </p>
       ) : null}
 
-      {busy && progress !== null ? (
-        <p style={{ margin: "0 0 8px", fontSize: 13, color: "#475569" }}>OCR: {progress}%</p>
-      ) : null}
-
-      {error ? <p style={{ margin: 0, fontSize: 14, color: "#b00020" }}>{error}</p> : null}
-
-      {draft ? (
-        <DraftPreview draft={draft} categoryName={categoryName} onApply={() => onApplyDraft(draft)} />
-      ) : null}
+      {draft ? <DraftPreview draft={draft} categoryName={categoryName} onApply={() => onApplyDraft(draft)} /> : null}
     </section>
   );
 }
@@ -110,31 +98,30 @@ function DraftPreview({
   onApply: () => void;
 }) {
   return (
-    <div
-      style={{
-        marginTop: 14,
-        padding: 14,
-        borderRadius: 10,
-        border: "1px solid #cbd5e1",
-        background: "#fff",
-      }}
-    >
-      <p style={{ margin: "0 0 10px", fontSize: 14, fontWeight: 600 }}>Dados sugeridos</p>
-      <ul style={{ margin: "0 0 12px", paddingLeft: 18, fontSize: 14, color: "#334155" }}>
-        <li>Referência: {draft.reference ?? "—"}</li>
-        <li>Data: {draft.occurred_on ?? "—"}</li>
-        <li>Valor: {draft.amount_euros ? `${draft.amount_euros} €` : "—"}</li>
-        <li>Fornecedor: {draft.vendor ?? "—"}</li>
-        <li>Rubrica sugerida: {categoryName ?? "—"}</li>
-      </ul>
+    <div className="card" style={{ marginTop: 16, padding: 16 }}>
+      <p className="list__title" style={{ margin: "0 0 10px" }}>
+        Dados sugeridos
+      </p>
+      <dl className="kv">
+        <dt className="muted">Referência</dt>
+        <dd>{draft.reference ?? "—"}</dd>
+        <dt className="muted">Data</dt>
+        <dd>{draft.occurred_on ?? "—"}</dd>
+        <dt className="muted">Valor</dt>
+        <dd>{draft.amount_euros ? `${draft.amount_euros} €` : "—"}</dd>
+        <dt className="muted">Fornecedor</dt>
+        <dd>{draft.vendor ?? "—"}</dd>
+        <dt className="muted">Rubrica sugerida</dt>
+        <dd>{categoryName ?? "—"}</dd>
+      </dl>
       {draft.warnings.length ? (
-        <ul style={{ margin: "0 0 12px", paddingLeft: 18, fontSize: 13, color: "#92400e" }}>
+        <ul className="alert alert--warning" style={{ margin: "0 0 14px", paddingLeft: 30, display: "block" }}>
           {draft.warnings.map((w) => (
             <li key={w}>{w}</li>
           ))}
         </ul>
       ) : null}
-      <button type="button" className="btn" onClick={onApply}>
+      <button type="button" className="btn btn--primary" onClick={onApply}>
         Usar no formulário
       </button>
     </div>

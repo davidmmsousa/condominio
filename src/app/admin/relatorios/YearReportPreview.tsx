@@ -1,3 +1,4 @@
+import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
 import { formatCents } from "@/lib/money";
 import type { YearReportDataset } from "@/lib/reports/yearReportDataset";
@@ -16,19 +17,11 @@ function ReportSection({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ marginTop: 28 }}>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "baseline",
-          gap: 12,
-          justifyContent: "space-between",
-          marginBottom: 10,
-        }}
-      >
-        <h3 style={{ margin: 0, fontSize: 17 }}>{title}</h3>
-        <a href={downloadHref} className="text-link" style={{ fontSize: 14 }}>
+    <div className="section">
+      <div className="section__head">
+        <h3 className="section__title">{title}</h3>
+        <a href={downloadHref} className="btn btn--sm">
+          <Icon name="download" size={15} />
           {downloadLabel}
         </a>
       </div>
@@ -39,7 +32,7 @@ function ReportSection({
 
 function TableScroll({ children }: { children: React.ReactNode }) {
   return (
-    <div className="data-table-wrap" style={{ maxHeight: 380, overflow: "auto" }}>
+    <div className="data-table-wrap data-table-wrap--scroll">
       {children}
     </div>
   );
@@ -51,45 +44,33 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
   const totalExp = data.expRows.reduce((s, r) => s + r.amount_cents, 0);
 
   return (
-    <section style={{ marginTop: 8 }}>
-      <h2 className="page-title" style={{ fontSize: "1.35rem", marginBottom: 8 }}>
-        Visão do ano {year}
-      </h2>
-      <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20, maxWidth: 820, lineHeight: 1.55 }}>
+    <section className="section">
+      <div className="section__head">
+        <h2 className="section__title" style={{ fontSize: "1.35rem" }}>
+          Visão do ano {year}
+        </h2>
+        <a href={`${apiBase}?year=${year}&segment=full`} target="_blank" rel="noopener noreferrer" className="btn btn--sm">
+          <Icon name="file" size={15} />
+          Relatório completo (.txt)
+        </a>
+      </div>
+      <p className="muted small" style={{ maxWidth: 820 }}>
         Pré-visualização com os mesmos critérios dos exports (cobranças por vencimento no ano; pagamentos por data de
         registo; despesas por data da fatura). Tabelas com scroll se a lista for longa.
       </p>
 
-      <p style={{ marginBottom: 16 }}>
-        <a
-          href={`${apiBase}?year=${year}&segment=full`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-link"
-        >
-          Relatório completo (.txt) — {year}
-        </a>
-      </p>
-
-      <div
-        className="admin-tile-grid"
-        style={{
-          marginTop: 0,
-          marginBottom: 8,
-          gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))",
-        }}
-      >
-        <div className="admin-tile" style={{ cursor: "default" }}>
-          <strong>Total cobranças</strong>
-          <span>{formatCents(totalCharged)}</span>
+      <div className="stat-grid">
+        <div className="stat">
+          <p className="stat__label">Total cobranças</p>
+          <p className="stat__value">{formatCents(totalCharged)}</p>
         </div>
-        <div className="admin-tile" style={{ cursor: "default" }}>
-          <strong>Total pagamentos</strong>
-          <span>{formatCents(totalPaid)}</span>
+        <div className="stat">
+          <p className="stat__label">Total pagamentos</p>
+          <p className="stat__value">{formatCents(totalPaid)}</p>
         </div>
-        <div className="admin-tile" style={{ cursor: "default" }}>
-          <strong>Total despesas</strong>
-          <span>{formatCents(totalExp)}</span>
+        <div className="stat">
+          <p className="stat__label">Total despesas</p>
+          <p className="stat__value">{formatCents(totalExp)}</p>
         </div>
       </div>
 
@@ -99,25 +80,25 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
         downloadLabel="CSV resumo"
       >
         {!data.summaryRows.length ? (
-          <p style={{ color: "#64748b" }}>Sem linhas (sem cobranças nem pagamentos neste ano).</p>
+          <p className="empty">Sem linhas (sem cobranças nem pagamentos neste ano).</p>
         ) : (
           <TableScroll>
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Fração</th>
-                  <th>Cobranças</th>
-                  <th>Pagos</th>
-                  <th>Diferença</th>
+                  <th className="num">Cobranças</th>
+                  <th className="num">Pagos</th>
+                  <th className="num">Diferença</th>
                 </tr>
               </thead>
               <tbody>
                 {data.summaryRows.map((r) => (
                   <tr key={r.code}>
                     <td>{r.code}</td>
-                    <td>{formatCents(r.charged)}</td>
-                    <td>{formatCents(r.paid)}</td>
-                    <td>{formatCents(r.charged - r.paid)}</td>
+                    <td className="num">{formatCents(r.charged)}</td>
+                    <td className="num">{formatCents(r.paid)}</td>
+                    <td className="num">{formatCents(r.charged - r.paid)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -132,7 +113,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
         downloadLabel="CSV cobranças"
       >
         {!data.chargeRows.length ? (
-          <p style={{ color: "#64748b" }}>Sem cobranças com vencimento neste ano civil.</p>
+          <p className="empty">Sem cobranças com vencimento neste ano civil.</p>
         ) : (
           <TableScroll>
             <table className="data-table">
@@ -142,7 +123,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
                   <th>Vencimento</th>
                   <th>Tipo</th>
                   <th>Mês ref.</th>
-                  <th>Valor</th>
+                  <th className="num">Valor</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,7 +133,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
                     <td>{r.due_date}</td>
                     <td>{r.kind}</td>
                     <td>{r.reference_month ? r.reference_month.slice(0, 7) : "—"}</td>
-                    <td>{formatCents(r.amount_cents)}</td>
+                    <td className="num">{formatCents(r.amount_cents)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -167,7 +148,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
         downloadLabel="CSV pagamentos"
       >
         {!data.payRows.length ? (
-          <p style={{ color: "#64748b" }}>Sem pagamentos registados neste ano civil.</p>
+          <p className="empty">Sem pagamentos registados neste ano civil.</p>
         ) : (
           <TableScroll>
             <table className="data-table">
@@ -175,9 +156,9 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
                 <tr>
                   <th>Fração</th>
                   <th>Data</th>
-                  <th>Valor</th>
+                  <th className="num">Valor</th>
                   <th>Meio</th>
-                  <th>Tesoura</th>
+                  <th>Tesouraria</th>
                   <th>Nota</th>
                 </tr>
               </thead>
@@ -186,7 +167,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
                   <tr key={r.id}>
                     <td>{r.units?.code ?? "—"}</td>
                     <td>{new Date(r.paid_at).toLocaleString("pt-PT")}</td>
-                    <td>{formatCents(r.amount_cents)}</td>
+                    <td className="num">{formatCents(r.amount_cents)}</td>
                     <td>{r.method?.trim() ? r.method : "—"}</td>
                     <td>{r.received_in?.trim() ? r.received_in : "—"}</td>
                     <td>{r.note?.trim() ? r.note : "—"}</td>
@@ -204,7 +185,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
         downloadLabel="CSV despesas"
       >
         {!data.expRows.length ? (
-          <p style={{ color: "#64748b" }}>Sem despesas com data neste ano civil.</p>
+          <p className="empty">Sem despesas com data neste ano civil.</p>
         ) : (
           <TableScroll>
             <table className="data-table">
@@ -212,7 +193,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
                 <tr>
                   <th>Rubrica</th>
                   <th>Data</th>
-                  <th>Valor</th>
+                  <th className="num">Valor</th>
                   <th>Origem</th>
                   <th>Fração</th>
                   <th>Fornecedor</th>
@@ -224,7 +205,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
                   <tr key={r.id}>
                     <td>{r.expense_categories?.name ?? "—"}</td>
                     <td>{r.occurred_on}</td>
-                    <td>{formatCents(r.amount_cents)}</td>
+                    <td className="num">{formatCents(r.amount_cents)}</td>
                     <td>{r.paid_from ?? "—"}</td>
                     <td>{r.payer_unit_id ? (data.unitCodeById.get(r.payer_unit_id) ?? "—") : "—"}</td>
                     <td>{r.vendor?.trim() ? r.vendor : "—"}</td>
@@ -237,7 +218,7 @@ export function YearReportPreview({ year, data }: { year: number; data: YearRepo
         )}
       </ReportSection>
 
-      <p style={{ marginTop: 20, fontSize: 13, color: "#64748b", maxWidth: 780 }}>
+      <p className="muted small" style={{ marginTop: 20, maxWidth: 780 }}>
         A coluna <strong>Diferença</strong> no resumo é apenas cobranças menos pagamentos no ano — não substitui o
         extrato com alocações por cobrança.{" "}
         <Link href="/admin/contas-correntes" className="text-link">

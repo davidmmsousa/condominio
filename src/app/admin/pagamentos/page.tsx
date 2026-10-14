@@ -1,3 +1,4 @@
+import { Icon } from "@/components/ui/Icon";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
 import Link from "next/link";
@@ -26,73 +27,87 @@ export default async function PagamentosAdminPage() {
   const list = (payments ?? []) as unknown as PRow[];
 
   return (
-    <main style={{ paddingTop: 24 }}>
-      <h1 style={{ marginTop: 0 }}>Pagamentos</h1>
-      <p style={{ marginTop: 4, marginBottom: 20 }}>
-        <Link href="/admin/pagamentos/tabela-geral" style={{ fontSize: 15, fontWeight: 600, color: "#1d4ed8" }}>
-          Tabela Geral
-        </Link>
-        <span style={{ color: "#64748b", fontSize: 14, marginLeft: 10 }}>
-          — visão mensal por fração (quotas correntes pagas)
-        </span>
-      </p>
-      <PaymentForm units={units ?? []} />
-      <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b", maxWidth: 720 }}>
-        Pagamento errado? Na tabela abaixo podes <strong>anular</strong> (reverte alocações e tesouraria). Opcionalmente
-        enviamos email ao morador a desconsiderar o recibo anterior.
-      </p>
-      <h2 style={{ fontSize: 18, marginTop: 40 }}>Últimos pagamentos</h2>
-      {!list.length ? (
-        <p style={{ color: "#555" }}>Sem pagamentos registados.</p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                <th style={{ padding: "8px 6px" }}>Data</th>
-                <th style={{ padding: "8px 6px" }}>Fração</th>
-                <th style={{ padding: "8px 6px" }}>Valor</th>
-                <th style={{ padding: "8px 6px" }}>Meio</th>
-                <th style={{ padding: "8px 6px" }}>Nota</th>
-                <th style={{ padding: "8px 6px", minWidth: 140 }}>Recibo</th>
-                <th style={{ padding: "8px 6px", minWidth: 200 }}>Anulação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "8px 6px" }}>{new Date(p.paid_at).toLocaleString("pt-PT")}</td>
-                  <td style={{ padding: "8px 6px" }}>{p.units?.code ?? "—"}</td>
-                  <td style={{ padding: "8px 6px" }}>{formatCents(p.amount_cents)}</td>
-                  <td style={{ padding: "8px 6px", color: "#555" }}>{p.method ?? "—"}</td>
-                  <td style={{ padding: "8px 6px", color: "#555" }}>{p.note ?? "—"}</td>
-                  <td style={{ padding: "8px 6px", verticalAlign: "top" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-                      <a
-                        href={`/api/admin/receipts/${p.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: 13 }}
-                      >
-                        PDF
-                      </a>
-                      <ResendReceiptEmailButton paymentId={p.id} />
-                    </div>
-                  </td>
-                  <td style={{ padding: "8px 6px", verticalAlign: "top" }}>
-                    <VoidPaymentRowForm
-                      paymentId={p.id}
-                      fractionCode={p.units?.code ?? "—"}
-                      amountFormatted={formatCents(p.amount_cents)}
-                      paidAtLabel={new Date(p.paid_at).toLocaleString("pt-PT")}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <main>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Financeiro</p>
+          <h1 className="page-title">Pagamentos</h1>
+          <p className="page-lead">Regista pagamentos dos moradores e emite os recibos.</p>
         </div>
-      )}
+        <Link href="/admin/pagamentos/tabela-geral" className="btn">
+          Tabela geral
+          <Icon name="arrowRight" size={16} />
+        </Link>
+      </header>
+
+      <section className="card" style={{ maxWidth: 760 }}>
+        <PaymentForm units={units ?? []} />
+      </section>
+      <p className="small muted" style={{ maxWidth: 720, marginTop: 12 }}>
+        Pagamento errado? Na tabela abaixo podes <strong>anular</strong> (reverte alocações e tesouraria).
+        Opcionalmente enviamos email ao morador a desconsiderar o recibo anterior.
+      </p>
+
+      <section className="section">
+        <h2 className="section__title">Últimos pagamentos</h2>
+        {!list.length ? (
+          <div className="empty">
+            <Icon name="wallet" size={28} />
+            Sem pagamentos registados.
+          </div>
+        ) : (
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Fração</th>
+                  <th className="num">Valor</th>
+                  <th>Meio</th>
+                  <th>Nota</th>
+                  <th style={{ minWidth: 140 }}>Recibo</th>
+                  <th style={{ minWidth: 200 }}>Anulação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((p) => (
+                  <tr key={p.id}>
+                    <td className="is-top nowrap">{new Date(p.paid_at).toLocaleString("pt-PT")}</td>
+                    <td className="is-top">
+                      <strong>{p.units?.code ?? "—"}</strong>
+                    </td>
+                    <td className="is-top num">{formatCents(p.amount_cents)}</td>
+                    <td className="is-top is-muted">{p.method ?? "—"}</td>
+                    <td className="is-top is-muted">{p.note ?? "—"}</td>
+                    <td className="is-top">
+                      <div className="stack" style={{ gap: 8, justifyItems: "start" }}>
+                        <a
+                          href={`/api/admin/receipts/${p.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn--sm"
+                        >
+                          <Icon name="download" size={15} />
+                          PDF
+                        </a>
+                        <ResendReceiptEmailButton paymentId={p.id} />
+                      </div>
+                    </td>
+                    <td className="is-top">
+                      <VoidPaymentRowForm
+                        paymentId={p.id}
+                        fractionCode={p.units?.code ?? "—"}
+                        amountFormatted={formatCents(p.amount_cents)}
+                        paidAtLabel={new Date(p.paid_at).toLocaleString("pt-PT")}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

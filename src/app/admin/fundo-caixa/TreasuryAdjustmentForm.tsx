@@ -4,16 +4,6 @@ import { createTreasuryAdjustmentAction, type ActionState } from "@/app/admin/ac
 import { TREASURY_BOOK_LABELS, type TreasuryBookKind } from "@/lib/treasury/types";
 import { useActionState } from "react";
 
-const inp = {
-  padding: "10px 12px",
-  borderRadius: 8,
-  border: "1px solid #ccc",
-  fontSize: 15,
-  maxWidth: 360,
-  width: "100%",
-  boxSizing: "border-box" as const,
-};
-
 const kinds: TreasuryBookKind[] = ["numerario", "conta_ordem", "conta_prazo"];
 
 export function TreasuryAdjustmentForm() {
@@ -23,15 +13,17 @@ export function TreasuryAdjustmentForm() {
   );
 
   return (
-    <form action={action} style={{ display: "grid", gap: 12, maxWidth: 440 }}>
-      <h2 style={{ fontSize: 17, margin: 0 }}>Ajuste de saldo</h2>
-      <p style={{ margin: 0, fontSize: 13, color: "#64748b", lineHeight: 1.45 }}>
-        Para corrigir diferenças de arranque ou reconciliação com extrato bancário (entrada ou saída na conta
-        indicada).
-      </p>
-      <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
+    <form action={action} className="form">
+      <div>
+        <h2 className="card__title">Ajuste de saldo</h2>
+        <p className="card__lead" style={{ marginBottom: 0 }}>
+          Para corrigir diferenças de arranque ou reconciliação com extrato bancário (entrada ou saída na conta
+          indicada).
+        </p>
+      </div>
+      <label className="field">
         Conta
-        <select name="kind" required disabled={pending} style={inp}>
+        <select name="kind" required disabled={pending}>
           {kinds.map((k) => (
             <option key={k} value={k}>
               {TREASURY_BOOK_LABELS[k]}
@@ -39,44 +31,34 @@ export function TreasuryAdjustmentForm() {
           ))}
         </select>
       </label>
-      <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
-        <legend style={{ fontSize: 14, marginBottom: 8 }}>Sentido</legend>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, cursor: "pointer" }}>
+      <fieldset className="fieldset">
+        <legend>Sentido</legend>
+        <label className="choice">
           <input type="radio" name="direction" value="entrada" defaultChecked disabled={pending} />
           Entrada (aumenta o saldo desta conta)
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, cursor: "pointer" }}>
+        <label className="choice">
           <input type="radio" name="direction" value="saida" disabled={pending} />
           Saída (diminui o saldo)
         </label>
       </fieldset>
-      <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
-        Valor (€)
-        <input name="euros" required disabled={pending} placeholder="ex.: 50" style={inp} />
-      </label>
-      <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
-        Data
-        <input name="occurred_on" type="date" required disabled={pending} style={inp} />
-      </label>
-      <label style={{ display: "grid", gap: 6, fontSize: 14 }}>
-        Motivo
-        <input name="memo" required disabled={pending} placeholder="Ex.: saldo inicial banco" style={inp} />
-      </label>
-      {state?.error ? <p style={{ color: "#b00020", margin: 0, fontSize: 14 }}>{state.error}</p> : null}
-      {state?.ok ? <p style={{ color: "#047857", margin: 0, fontSize: 14 }}>{state.message}</p> : null}
-      <button
-        type="submit"
-        disabled={pending}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 8,
-          border: "none",
-          background: pending ? "#999" : "#111",
-          color: "#fff",
-          cursor: pending ? "not-allowed" : "pointer",
-          width: "fit-content",
-        }}
-      >
+      <div className="form-grid">
+        <label className="field">
+          Valor (€)
+          <input name="euros" required disabled={pending} placeholder="ex.: 50" />
+        </label>
+        <label className="field">
+          Data
+          <input name="occurred_on" type="date" required disabled={pending} />
+        </label>
+        <label className="field field--full">
+          Motivo
+          <input name="memo" required disabled={pending} placeholder="Ex.: saldo inicial banco" />
+        </label>
+      </div>
+      {state?.error ? <p className="alert alert--error">{state.error}</p> : null}
+      {state?.ok ? <p className="alert alert--success">{state.message}</p> : null}
+      <button type="submit" disabled={pending} className="btn btn--primary btn--fit">
         {pending ? "A guardar…" : "Registar ajuste"}
       </button>
     </form>

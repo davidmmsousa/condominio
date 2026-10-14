@@ -70,23 +70,14 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      style={{
-        display: "grid",
-        gap: 16,
-        width: "100%",
-        maxWidth: "100%",
-        padding: "4px 0 0",
-      }}
-    >
+    <form onSubmit={onSubmit} className="form">
       {infoBanner ? (
-        <p role="status" style={{ margin: 0, fontSize: 14, color: "#065f46", background: "#d1fae5", padding: 12, borderRadius: 8 }}>
+        <p role="status" className="alert alert--success">
           {infoBanner}
         </p>
       ) : null}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Email</span>
+      <label className="field">
+        Email
         <input
           type="email"
           autoComplete="email"
@@ -94,23 +85,10 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
           onChange={(e) => setEmail(e.target.value)}
           required
           disabled={loading}
-          style={{
-            padding: "12px 14px",
-            borderRadius: 10,
-            border: "1px solid #cbd5e1",
-            fontSize: 16,
-            background: loading ? "#f8fafc" : "#fff",
-            outlineOffset: 2,
-          }}
         />
       </label>
-      <div style={{ textAlign: "right", marginTop: -4 }}>
-        <Link href="/entrar/recuperar" style={{ fontSize: 13, color: "#4f46e5", fontWeight: 600 }}>
-          Esqueci-me da palavra-passe
-        </Link>
-      </div>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Palavra-passe</span>
+      <label className="field">
+        Palavra-passe
         <input
           type="password"
           autoComplete="current-password"
@@ -118,37 +96,17 @@ export function LoginForm({ redirectFromQuery, infoBanner }: Props) {
           onChange={(e) => setPassword(e.target.value)}
           required
           disabled={loading}
-          style={{
-            padding: "12px 14px",
-            borderRadius: 10,
-            border: "1px solid #cbd5e1",
-            fontSize: 16,
-            background: loading ? "#f8fafc" : "#fff",
-            outlineOffset: 2,
-          }}
         />
       </label>
+      <Link href="/entrar/recuperar" className="auth-forgot">
+        Esqueci-me da palavra-passe
+      </Link>
       {error ? (
-        <p role="alert" style={{ color: "#b00020", margin: 0, fontSize: 14 }}>
+        <p role="alert" className="alert alert--error">
           {error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={loading}
-        style={{
-          marginTop: 4,
-          padding: "14px 16px",
-          borderRadius: 10,
-          border: "none",
-          background: loading ? "#94a3b8" : "linear-gradient(180deg,#1e293b,#0f172a)",
-          color: "#fff",
-          fontSize: 16,
-          fontWeight: 600,
-          cursor: loading ? "not-allowed" : "pointer",
-          boxShadow: loading ? undefined : "0 8px 24px rgba(15,23,42,0.18)",
-        }}
-      >
+      <button type="submit" disabled={loading} className="btn btn--primary btn--lg btn--block">
         {loading ? "A entrar…" : "Entrar"}
       </button>
     </form>

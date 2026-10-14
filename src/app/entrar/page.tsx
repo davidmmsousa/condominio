@@ -35,7 +35,7 @@ export default async function EntrarPage({ searchParams }: Props) {
     return (
       <AuthShell eyebrow="Sessão" title="Conta sem perfil" lead="Este utilizador não tem linha em profiles. Contacta o administrador ou usa outra conta.">
         <form action={signOutServer}>
-          <button type="submit" className="btn" style={{ marginTop: 8, fontSize: 15 }}>
+          <button type="submit" className="btn btn--block">
             Terminar sessão
           </button>
         </form>
@@ -50,10 +50,8 @@ export default async function EntrarPage({ searchParams }: Props) {
       lead="Utiliza o email da tua conta. Se recuperaste a password recentemente, o link só funciona até expirar — pede novo em “Esqueci-me”."
     >
       <LoginForm redirectFromQuery={redirectFromQuery} infoBanner={infoBanner} />
-      <p style={{ marginTop: 20, marginBottom: 0, textAlign: "center" as const }}>
-        <Link href="/" className="text-link" style={{ fontSize: 14 }}>
-          ← Voltar ao início
-        </Link>
+      <p className="auth-shell__foot">
+        <Link href="/">← Voltar ao início</Link>
       </p>
     </AuthShell>
   );

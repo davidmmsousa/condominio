@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/ui/Icon";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,7 +12,7 @@ export function LogoutButton({ label = "Sair" }: { label?: string }) {
   return (
     <button
       type="button"
-      className="btn"
+      className="btn btn--sm"
       disabled={busy}
       onClick={async () => {
         setBusy(true);
@@ -21,6 +22,7 @@ export function LogoutButton({ label = "Sair" }: { label?: string }) {
         router.refresh();
       }}
     >
+      <Icon name="logout" size={15} />
       {busy ? "A sair…" : label}
     </button>
   );

@@ -4,7 +4,7 @@ import { formatCents } from "@/lib/money";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { TREASURY_BOOK_LABELS, type TreasuryBookKind } from "@/lib/treasury/types";
-import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 
 export default async function FundoCaixaPage() {
   const supabase = await createServerRouteSupabaseClient();
@@ -13,9 +13,9 @@ export default async function FundoCaixaPage() {
     cid = await ensureSingletonCondominiumId(supabase);
   } catch {
     return (
-      <main style={{ paddingTop: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Fundo de caixa</h1>
-        <p style={{ color: "#b00020" }}>Condomínio em falta ou erro de configuração.</p>
+      <main>
+        <h1 className="page-title">Fundo de caixa</h1>
+        <p className="alert alert--error">Condomínio em falta ou erro de configuração.</p>
       </main>
     );
   }
@@ -28,11 +28,13 @@ export default async function FundoCaixaPage() {
 
   if (aErr) {
     return (
-      <main style={{ paddingTop: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Fundo de caixa</h1>
-        <p style={{ color: "#b00020" }}>
-          Não foi possível ler as contas de tesouraria ({aErr.message}). Aplica{" "}
-          <code>supabase/patch_treasury.sql</code> no Supabase.
+      <main>
+        <h1 className="page-title">Fundo de caixa</h1>
+        <p className="alert alert--error">
+          <span>
+            Não foi possível ler as contas de tesouraria ({aErr.message}). Aplica{" "}
+            <code>supabase/patch_treasury.sql</code> no Supabase.
+          </span>
         </p>
       </main>
     );
@@ -47,9 +49,9 @@ export default async function FundoCaixaPage() {
 
   if (mbErr) {
     return (
-      <main style={{ paddingTop: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Fundo de caixa</h1>
-        <p style={{ color: "#b00020" }}>{mbErr.message}</p>
+      <main>
+        <h1 className="page-title">Fundo de caixa</h1>
+        <p className="alert alert--error">{mbErr.message}</p>
       </main>
     );
   }
@@ -69,9 +71,9 @@ export default async function FundoCaixaPage() {
 
   if (mrErr) {
     return (
-      <main style={{ paddingTop: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Fundo de caixa</h1>
-        <p style={{ color: "#b00020" }}>{mrErr.message}</p>
+      <main>
+        <h1 className="page-title">Fundo de caixa</h1>
+        <p className="alert alert--error">{mrErr.message}</p>
       </main>
     );
   }
@@ -88,92 +90,89 @@ export default async function FundoCaixaPage() {
   };
   const recent = (movRecent ?? []) as unknown as MRow[];
 
-  return (
-    <main style={{ paddingTop: 24, maxWidth: 980 }}>
-      <h1 style={{ marginTop: 0 }}>Fundo de caixa</h1>
-      <p style={{ color: "#555", maxWidth: 720, lineHeight: 1.55 }}>
-        Três contas internas: <strong>numerário</strong>, <strong>conta à ordem</strong> e <strong>conta a prazo</strong>
-        . Os pagamentos dos moradores registam entrada na conta que escolheres; as despesas debitam a conta de onde o
-        custo saiu. Antecipação por morador não mexa na tesouraria — gera um pagamento simbólico na conta corrente da
-        fração.
-      </p>
+  const totalBalance = accountRows.reduce((sum, a) => sum + (balanceByAccount.get(a.id) ?? 0), 0);
 
-      <section
-        style={{
-          marginTop: 24,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: 16,
-        }}
-      >
+  return (
+    <main>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Financeiro</p>
+          <h1 className="page-title">Fundo de caixa</h1>
+          <p className="page-lead">
+            Três contas internas: <strong>numerário</strong>, <strong>conta à ordem</strong> e{" "}
+            <strong>conta a prazo</strong>. Os pagamentos dos moradores entram na conta que escolheres; as despesas
+            debitam a conta de onde o custo saiu. A antecipação por morador não mexe na tesouraria — gera um pagamento
+            simbólico na conta corrente da fração.
+          </p>
+        </div>
+      </header>
+
+      <section className="stat-grid" aria-label="Saldos">
         {accountRows.map((a) => (
-          <div
-            key={a.id}
-            style={{
-              padding: 16,
-              borderRadius: 10,
-              border: "1px solid #e2e8f0",
-              background: "#fafafa",
-            }}
-          >
-            <div style={{ fontSize: 13, color: "#64748b" }}>{TREASURY_BOOK_LABELS[a.kind]}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, marginTop: 6 }}>{formatCents(balanceByAccount.get(a.id) ?? 0)}</div>
+          <div key={a.id} className="stat">
+            <p className="stat__label">{TREASURY_BOOK_LABELS[a.kind]}</p>
+            <p className="stat__value">{formatCents(balanceByAccount.get(a.id) ?? 0)}</p>
           </div>
         ))}
+        {accountRows.length > 1 ? (
+          <div className="stat" style={{ background: "var(--accent-soft)", borderColor: "rgba(67, 56, 202, 0.2)" }}>
+            <p className="stat__label">Total</p>
+            <p className="stat__value">{formatCents(totalBalance)}</p>
+          </div>
+        ) : null}
       </section>
 
-      <div
-        style={{
-          marginTop: 36,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          gap: 28,
-          alignItems: "start",
-        }}
-      >
-        <div style={{ padding: 20, borderRadius: 12, border: "1px solid #e2e8f0", background: "#fff" }}>
+      <div className="card-grid section">
+        <section className="card">
           <TreasuryTransferForm />
-        </div>
-        <div style={{ padding: 20, borderRadius: 12, border: "1px solid #e2e8f0", background: "#fff" }}>
+        </section>
+        <section className="card">
           <TreasuryAdjustmentForm />
-        </div>
+        </section>
       </div>
 
-      <section style={{ marginTop: 40 }}>
-        <h2 style={{ fontSize: 18 }}>Últimos movimentos</h2>
+      <section className="section">
+        <h2 className="section__title">Últimos movimentos</h2>
         {!recent.length ? (
-          <p style={{ color: "#64748b" }}>Ainda não há movimentos (ou patch ainda não aplicado).</p>
+          <div className="empty">
+            <Icon name="landmark" size={28} />
+            Ainda não há movimentos (ou o patch ainda não foi aplicado).
+          </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <div className="data-table-wrap">
+            <table className="data-table">
               <thead>
-                <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                  <th style={{ padding: "8px 6px" }}>Data</th>
-                  <th style={{ padding: "8px 6px" }}>Conta</th>
-                  <th style={{ padding: "8px 6px" }}>Valor</th>
-                  <th style={{ padding: "8px 6px" }}>Descrição</th>
-                  <th style={{ padding: "8px 6px" }}>Ligação</th>
+                <tr>
+                  <th>Data</th>
+                  <th>Conta</th>
+                  <th className="num">Valor</th>
+                  <th>Descrição</th>
+                  <th>Ligação</th>
                 </tr>
               </thead>
               <tbody>
                 {recent.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>
+                  <tr key={r.id}>
+                    <td className="nowrap">
                       {new Date(r.occurred_at).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" })}
                     </td>
-                    <td style={{ padding: "8px 6px" }}>
-                      {r.treasury_accounts?.kind ? TREASURY_BOOK_LABELS[r.treasury_accounts.kind] : "—"}
+                    <td>{r.treasury_accounts?.kind ? TREASURY_BOOK_LABELS[r.treasury_accounts.kind] : "—"}</td>
+                    <td className="num">
+                      <strong style={{ color: r.amount_cents < 0 ? "var(--danger)" : "var(--success)" }}>
+                        {formatCents(r.amount_cents)}
+                      </strong>
                     </td>
-                    <td style={{ padding: "8px 6px", fontWeight: r.amount_cents < 0 ? 600 : 500 }}>{formatCents(r.amount_cents)}</td>
-                    <td style={{ padding: "8px 6px", color: "#334155" }}>{r.memo || "—"}</td>
-                    <td style={{ padding: "8px 6px", fontSize: 12, color: "#64748b" }}>
-                      {r.payment_id
-                        ? "Pagamento"
-                        : r.expense_id
-                          ? "Despesa"
-                          : r.transfer_group_id
-                            ? "Transferência"
-                            : "Ajuste"}
+                    <td>{r.memo || "—"}</td>
+                    <td>
+                      <span className="badge badge--neutral">
+                        {r.payment_id
+                          ? "Pagamento"
+                          : r.expense_id
+                            ? "Despesa"
+                            : r.transfer_group_id
+                              ? "Transferência"
+                              : "Ajuste"}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -182,12 +181,6 @@ export default async function FundoCaixaPage() {
           </div>
         )}
       </section>
-
-      <p style={{ marginTop: 32 }}>
-        <Link href="/admin" style={{ color: "#555", fontSize: 14 }}>
-          ← Início admin
-        </Link>
-      </p>
     </main>
   );
 }

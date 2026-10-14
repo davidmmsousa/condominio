@@ -1,3 +1,4 @@
+import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
@@ -33,81 +34,76 @@ export default async function DespesasAdminPage() {
   const unitCodeById = new Map((units ?? []).map((u) => [u.id, u.code]));
 
   return (
-    <main style={{ paddingTop: 24 }}>
-      <h1 style={{ marginTop: 0 }}>Despesas e rubricas</h1>
-      <p style={{ color: "#555", maxWidth: 720, lineHeight: 1.55 }}>
-        As <strong>rubricas</strong> classificam custos (água, electricidade, elevador, limpeza, …). Cada{" "}
-        <strong>fatura</strong> fica com referência, data, valor e rubrica; indica se o custo saiu do{" "}
-        <strong>numerário</strong>, da <strong>conta à ordem</strong>, da <strong>conta a prazo</strong> ou se foi{" "}
-        <strong>pago por um morador</strong> (gera acerto na conta corrente dessa fração). Os dados entram nos relatórios
-        CSV e no <Link href="/admin/fundo-caixa">fundo de caixa</Link>.
-      </p>
+    <main>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Financeiro</p>
+          <h1 className="page-title">Despesas e rubricas</h1>
+          <p className="page-lead">
+            As <strong>rubricas</strong> classificam custos (água, eletricidade, elevador, limpeza, …). Cada{" "}
+            <strong>fatura</strong> fica com referência, data, valor e rubrica; indica se o custo saiu do{" "}
+            <strong>numerário</strong>, da <strong>conta à ordem</strong>, da <strong>conta a prazo</strong> ou se foi{" "}
+            <strong>pago por um morador</strong> (gera acerto na conta corrente dessa fração). Os dados entram nos
+            relatórios CSV e no <Link href="/admin/fundo-caixa" className="text-link">fundo de caixa</Link>.
+          </p>
+        </div>
+      </header>
 
-      <section
-        style={{
-          marginTop: 28,
-          padding: 20,
-          borderRadius: 12,
-          border: "1px solid #e2e8f0",
-          maxWidth: 720,
-          background: "#fafafa",
-        }}
-      >
-        <h2 style={{ marginTop: 0, fontSize: 18 }}>Rubricas</h2>
-        <CreateCategoryForm />
-        {!categories?.length ? (
-          <p style={{ color: "#64748b", marginBottom: 0 }}>Ainda não há rubricas. Adiciona a primeira (ex.: Água).</p>
-        ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {categories.map((c) => (
-              <li
-                key={c.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 0",
-                  borderBottom: "1px solid #e5e5e5",
-                  gap: 12,
-                }}
-              >
-                <strong>{c.name}</strong>
-                <DeleteCategoryButton categoryId={c.id} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="card-grid">
+        <section className="card">
+          <h2 className="card__title">Rubricas</h2>
+          <CreateCategoryForm />
+          {!categories?.length ? (
+            <p className="muted small" style={{ margin: 0 }}>
+              Ainda não há rubricas. Adiciona a primeira (ex.: Água).
+            </p>
+          ) : (
+            <ul className="list">
+              {categories.map((c) => (
+                <li key={c.id} className="list__item">
+                  <span className="list__title">{c.name}</span>
+                  <DeleteCategoryButton categoryId={c.id} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-      <section style={{ marginTop: 32, maxWidth: 720 }}>
-        <h2 style={{ fontSize: 18 }}>Registar fatura / despesa</h2>
-        <RegisterExpenseSection categories={categories ?? []} units={units ?? []} />
-      </section>
+        <section className="card">
+          <h2 className="card__title">Registar fatura / despesa</h2>
+          <RegisterExpenseSection categories={categories ?? []} units={units ?? []} />
+        </section>
+      </div>
 
-      <section style={{ marginTop: 40 }}>
-        <h2 style={{ fontSize: 18 }}>Últimas despesas</h2>
+      <section className="section">
+        <h2 className="section__title">Últimas despesas</h2>
         {!expenseRows.length ? (
-          <p style={{ color: "#555" }}>Ainda não há despesas registadas.</p>
+          <div className="empty">
+            <Icon name="tag" size={28} />
+            Ainda não há despesas registadas.
+          </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", maxWidth: 960, borderCollapse: "collapse", fontSize: 14 }}>
+          <div className="data-table-wrap">
+            <table className="data-table">
               <thead>
-                <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                  <th style={{ padding: "8px 6px" }}>Data</th>
-                  <th style={{ padding: "8px 6px" }}>Rubrica</th>
-                  <th style={{ padding: "8px 6px" }}>Origem</th>
-                  <th style={{ padding: "8px 6px" }}>Referência</th>
-                  <th style={{ padding: "8px 6px" }}>Fornecedor</th>
-                  <th style={{ padding: "8px 6px" }}>Valor</th>
-                  <th style={{ padding: "8px 6px" }} />
+                <tr>
+                  <th>Data</th>
+                  <th>Rubrica</th>
+                  <th>Origem</th>
+                  <th>Referência</th>
+                  <th>Fornecedor</th>
+                  <th className="num">Valor</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
                 {expenseRows.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>{r.occurred_on}</td>
-                    <td style={{ padding: "8px 6px" }}>{r.expense_categories?.name ?? "—"}</td>
-                    <td style={{ padding: "8px 6px", fontSize: 13, color: "#444" }}>
+                  <tr key={r.id}>
+                    <td className="nowrap">{r.occurred_on}</td>
+                    <td>
+                      <span className="badge">{r.expense_categories?.name ?? "—"}</span>
+                    </td>
+                    <td className="is-muted">
                       {!r.paid_from
                         ? "—"
                         : `${EXPENSE_FUNDING_LABELS[r.paid_from as ExpenseFunding] ?? r.paid_from}${
@@ -116,10 +112,10 @@ export default async function DespesasAdminPage() {
                               : ""
                           }`}
                     </td>
-                    <td style={{ padding: "8px 6px", color: "#333" }}>{r.note ?? "—"}</td>
-                    <td style={{ padding: "8px 6px", color: "#555" }}>{r.vendor ?? "—"}</td>
-                    <td style={{ padding: "8px 6px" }}>{formatCents(r.amount_cents)}</td>
-                    <td style={{ padding: "8px 6px" }}>
+                    <td>{r.note ?? "—"}</td>
+                    <td className="is-muted">{r.vendor ?? "—"}</td>
+                    <td className="num">{formatCents(r.amount_cents)}</td>
+                    <td>
                       <DeleteExpenseButton expenseId={r.id} />
                     </td>
                   </tr>

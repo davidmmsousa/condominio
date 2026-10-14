@@ -1,3 +1,4 @@
+import { Icon } from "@/components/ui/Icon";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { CreateResidentForm } from "./CreateResidentForm";
 import { DeleteResidentButton } from "./DeleteResidentButton";
@@ -26,53 +27,66 @@ export default async function MoradoresAdminPage() {
   const unitList = units ?? [];
 
   return (
-    <main style={{ paddingTop: 24 }}>
-      <h1 style={{ marginTop: 0 }}>Moradores</h1>
-      <p style={{ color: "#555", maxWidth: 720 }}>
-        A <strong>lista</strong> é a tabela <code>residents</code> (contactos). Com email e{" "}
-        <code>SUPABASE_SERVICE_ROLE_KEY</code>, ao guardar um morador o sistema <strong>cria a conta Auth</strong> (se
-        o email ainda não existir) com password em <code>RESIDENT_DEFAULT_PASSWORD</code> ou, se não definires,{" "}
-        <code>tomar2026</code>. Se o email já existir, associa o perfil à fração. &quot;Ligar ao portal&quot; faz o
-        mesmo numa ficha antiga. O <strong>NIF</strong> (opcional) aparece nos recibos PDF.
+    <main>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Gestão</p>
+          <h1 className="page-title">Moradores</h1>
+        </div>
+      </header>
+
+      <p className="alert alert--info" style={{ marginBottom: 24 }}>
+        <span>
+          A <strong>lista</strong> é a tabela <code>residents</code> (contactos). Com email e{" "}
+          <code>SUPABASE_SERVICE_ROLE_KEY</code>, ao guardar um morador o sistema <strong>cria a conta Auth</strong> (se
+          o email ainda não existir) com password em <code>RESIDENT_DEFAULT_PASSWORD</code> ou, se não definires,{" "}
+          <code>tomar2026</code>. Se o email já existir, associa o perfil à fração. «Ligar ao portal» faz o mesmo numa
+          ficha antiga. O <strong>NIF</strong> (opcional) aparece nos recibos PDF.
+        </span>
       </p>
-      <CreateResidentForm units={unitList} />
-      <h2 style={{ fontSize: 18 }}>Lista</h2>
-      {!rows.length ? (
-        <p style={{ color: "#555" }}>Ainda não há moradores.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {rows.map((r) => (
-            <li key={r.id} style={{ padding: "12px 0", borderBottom: "1px solid #eee" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <strong>{r.full_name}</strong>
-                  <span style={{ color: "#555" }}> · Fração {r.units?.code ?? "—"}</span>
-                  {r.email ? <div style={{ fontSize: 14, color: "#333" }}>{r.email}</div> : null}
-                  {r.phone ? <div style={{ fontSize: 14, color: "#333" }}>{r.phone}</div> : null}
-                  {r.tax_id ? <div style={{ fontSize: 14, color: "#333" }}>NIF: {r.tax_id}</div> : null}
+
+      <section className="card card--narrow" style={{ maxWidth: 720 }}>
+        <CreateResidentForm units={unitList} />
+      </section>
+
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">Lista</h2>
+          {rows.length ? <span className="badge badge--neutral">{rows.length} moradores</span> : null}
+        </div>
+        {!rows.length ? (
+          <div className="empty">
+            <Icon name="users" size={28} />
+            Ainda não há moradores.
+          </div>
+        ) : (
+          <ul className="list">
+            {rows.map((r) => (
+              <li key={r.id} className="list__item list__item--top list__item--wrap">
+                <div className="list__main">
+                  <div>
+                    <span className="list__title">{r.full_name}</span>{" "}
+                    <span className="badge">Fração {r.units?.code ?? "—"}</span>
+                  </div>
+                  {r.email ? <div className="list__meta">{r.email}</div> : null}
+                  {r.phone ? <div className="list__meta">{r.phone}</div> : null}
+                  {r.tax_id ? <div className="list__meta">NIF: {r.tax_id}</div> : null}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                <div className="list__actions">
                   {r.email ? <LinkResidentProfileButton residentId={r.id} /> : null}
                   <DeleteResidentButton residentId={r.id} />
                 </div>
-              </div>
-              <details style={{ marginTop: 10 }}>
-                <summary style={{ cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#3730a3" }}>
-                  Editar morador
-                </summary>
-                <EditResidentForm resident={r} units={unitList} />
-              </details>
-            </li>
-          ))}
-        </ul>
-      )}
+                <details className="disclosure">
+                  <summary>Editar morador</summary>
+                  <div className="disclosure__body">
+                    <EditResidentForm resident={r} units={unitList} />
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

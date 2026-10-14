@@ -29,28 +29,12 @@ export function ResendReceiptEmailButton({ paymentId }: { paymentId: string }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-      <button
-        type="button"
-        onClick={resend}
-        disabled={status === "loading"}
-        style={{
-          fontSize: 13,
-          padding: "4px 8px",
-          borderRadius: 6,
-          border: "1px solid #ccc",
-          background: status === "loading" ? "#eee" : "#fff",
-          cursor: status === "loading" ? "wait" : "pointer",
-        }}
-      >
+    <div className="stack" style={{ gap: 6, justifyItems: "start" }}>
+      <button type="button" onClick={resend} disabled={status === "loading"} className="btn btn--sm">
         {status === "loading" ? "A enviar…" : "Reenviar email"}
       </button>
-      {status === "ok" ? (
-        <span style={{ fontSize: 12, color: "#0a7a0a" }}>{detail}</span>
-      ) : null}
-      {status === "err" ? (
-        <span style={{ fontSize: 12, color: "#b00020", maxWidth: 220 }}>{detail}</span>
-      ) : null}
+      {status === "ok" ? <span className="alert alert--success alert--inline">{detail}</span> : null}
+      {status === "err" ? <span className="alert alert--error alert--inline">{detail}</span> : null}
     </div>
   );
 }

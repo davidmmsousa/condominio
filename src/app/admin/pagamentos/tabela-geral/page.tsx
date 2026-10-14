@@ -1,6 +1,7 @@
 import { fetchCondominiumForRelatorios } from "@/lib/condominiumMeta";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
+import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
 
 const MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"] as const;
@@ -20,9 +21,9 @@ export default async function TabelaGeralPage({ searchParams }: Props) {
     cid = await ensureSingletonCondominiumId(supabase);
   } catch {
     return (
-      <main style={{ paddingTop: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Tabela geral</h1>
-        <p style={{ color: "#b00020" }}>Condomínio em falta.</p>
+      <main>
+        <h1 className="page-title">Tabela geral</h1>
+        <p className="alert alert--error">Condomínio em falta.</p>
       </main>
     );
   }
@@ -41,9 +42,9 @@ export default async function TabelaGeralPage({ searchParams }: Props) {
 
   if (uErr) {
     return (
-      <main style={{ paddingTop: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Tabela geral</h1>
-        <p style={{ color: "#b00020" }}>{uErr.message}</p>
+      <main>
+        <h1 className="page-title">Tabela geral</h1>
+        <p className="alert alert--error">{uErr.message}</p>
       </main>
     );
   }
@@ -63,9 +64,9 @@ export default async function TabelaGeralPage({ searchParams }: Props) {
 
   if (cErr) {
     return (
-      <main style={{ paddingTop: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Tabela geral</h1>
-        <p style={{ color: "#b00020" }}>{cErr.message}</p>
+      <main>
+        <h1 className="page-title">Tabela geral</h1>
+        <p className="alert alert--error">{cErr.message}</p>
       </main>
     );
   }
@@ -82,9 +83,9 @@ export default async function TabelaGeralPage({ searchParams }: Props) {
       .in("charge_id", chargeIds);
     if (aErr) {
       return (
-        <main style={{ paddingTop: 24 }}>
-          <h1 style={{ marginTop: 0 }}>Tabela geral</h1>
-          <p style={{ color: "#b00020" }}>{aErr.message}</p>
+        <main>
+          <h1 className="page-title">Tabela geral</h1>
+          <p className="alert alert--error">{aErr.message}</p>
         </main>
       );
     }
@@ -107,135 +108,61 @@ export default async function TabelaGeralPage({ searchParams }: Props) {
   const yearsNav = [year - 1, year, year + 1].filter((y) => y >= 2000 && y <= 2100);
 
   return (
-    <main style={{ paddingTop: 24, maxWidth: 1100 }}>
-      <p style={{ marginTop: 0 }}>
-        <Link href="/admin/pagamentos" style={{ color: "#555", fontSize: 14 }}>
-          ← Pagamentos
-        </Link>
-      </p>
-      <h1 style={{ marginTop: 8 }}>Tabela geral — quotas {year}</h1>
-      <p style={{ color: "#555", maxWidth: 720, lineHeight: 1.55, fontSize: 14 }}>
-        Uma linha por fração (por ordem de código). Em cada mês aparece <strong>✓</strong> quando a quota corrente desse
-        mês está <strong>totalmente paga</strong> (alocações aos pagamentos). Sem cobrança gerada para esse mês fica
-        vazio.
-      </p>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 16, marginBottom: 20 }}>
-        <span style={{ fontSize: 14, color: "#555" }}>Ano:</span>
-        {yearsNav.map((y) =>
-          y === year ? (
-            <span
-              key={y}
-              style={{
-                fontSize: 14,
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid #64748b",
-                color: "#111",
-                fontWeight: 700,
-                background: "#f1f5f9",
-              }}
-            >
-              {y}
-            </span>
-          ) : (
+    <main>
+      <Link href="/admin/pagamentos" className="back-link">
+        <Icon name="arrowLeft" size={16} />
+        Pagamentos
+      </Link>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Financeiro</p>
+          <h1 className="page-title">Tabela geral — quotas {year}</h1>
+          <p className="page-lead">
+            Uma linha por fração. Cada mês mostra <strong>✓</strong> quando a quota corrente está{" "}
+            <strong>totalmente paga</strong>; sem cobrança gerada, a célula fica vazia.
+          </p>
+        </div>
+        <nav className="pill-nav" aria-label="Escolher ano">
+          {yearsNav.map((y) => (
             <Link
               key={y}
               href={`/admin/pagamentos/tabela-geral?ano=${y}`}
-              style={{
-                fontSize: 14,
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid #ccc",
-                textDecoration: "none",
-                color: "#2563eb",
-                background: "#fff",
-              }}
+              className={y === year ? "pill is-active" : "pill"}
+              aria-current={y === year ? "page" : undefined}
             >
               {y}
             </Link>
-          ),
-        )}
-      </div>
+          ))}
+        </nav>
+      </header>
 
-      <div style={{ overflowX: "auto", border: "1px solid #cbd5e1", borderRadius: 8 }}>
-        <table style={{ borderCollapse: "collapse", fontSize: 13, minWidth: 720, width: "100%" }}>
+      <div className="matrix-wrap">
+        <table className="matrix">
           <thead>
-            <tr style={{ background: "#e2e8f0" }}>
-              <th
-                style={{
-                  padding: "10px 8px",
-                  textAlign: "left",
-                  borderBottom: "2px solid #94a3b8",
-                  borderRight: "1px solid #94a3b8",
-                  position: "sticky",
-                  left: 0,
-                  background: "#e2e8f0",
-                  zIndex: 1,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Fração
-              </th>
+            <tr>
+              <th className="matrix__unit">Fração</th>
               {MESES.map((m) => (
-                <th
-                  key={m}
-                  style={{
-                    padding: "10px 6px",
-                    textAlign: "center",
-                    borderBottom: "2px solid #94a3b8",
-                    borderRight: "1px solid #cbd5e1",
-                    minWidth: 44,
-                    fontWeight: 700,
-                  }}
-                >
-                  {m}
-                </th>
+                <th key={m}>{m}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {unitRows.length === 0 ? (
               <tr>
-                <td colSpan={13} style={{ padding: 16, color: "#64748b" }}>
+                <td colSpan={13} className="muted" style={{ padding: 20 }}>
                   Sem frações. Cria frações em Admin → Frações.
                 </td>
               </tr>
             ) : (
               unitRows.map((u) => (
                 <tr key={u.id}>
-                  <td
-                    style={{
-                      padding: "8px 8px",
-                      borderBottom: "1px solid #e2e8f0",
-                      borderRight: "1px solid #cbd5e1",
-                      fontWeight: 600,
-                      position: "sticky",
-                      left: 0,
-                      background: "#fff",
-                      zIndex: 1,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {u.code}
-                  </td>
+                  <td className="matrix__unit">{u.code}</td>
                   {MESES.map((_, idx) => {
                     const month = idx + 1;
                     const cell = chargeByUnitMonth.get(`${u.id}:${month}`);
-                    const ok =
-                      cell && cell.amount_cents > 0 && cell.applied >= cell.amount_cents;
+                    const ok = cell && cell.amount_cents > 0 && cell.applied >= cell.amount_cents;
                     return (
-                      <td
-                        key={month}
-                        style={{
-                          padding: "8px 4px",
-                          textAlign: "center",
-                          borderBottom: "1px solid #e2e8f0",
-                          borderRight: "1px solid #e2e8f0",
-                          color: ok ? "#047857" : "#94a3b8",
-                          fontSize: 16,
-                        }}
-                      >
+                      <td key={month} className={ok ? "matrix__ok" : undefined}>
                         {ok ? "✓" : ""}
                       </td>
                     );

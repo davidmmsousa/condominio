@@ -1,3 +1,4 @@
+import { Icon } from "@/components/ui/Icon";
 import { loadResidentAccountSnapshot } from "@/lib/resident/accountSnapshot";
 import { loadResidentPortalContext } from "@/lib/resident/portalContext";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
@@ -21,7 +22,7 @@ export default async function SaldosPage() {
         <main className="page-shell page-shell--portal">
           <ResidentHubNav />
           <h1 className="page-title">Conta corrente</h1>
-          <p className="page-lead">A tua conta ainda não está ligada a uma fração.</p>
+          <p className="alert alert--warning">A tua conta ainda não está ligada a uma fração.</p>
         </main>
       </ResidentPortalShell>
     );
@@ -33,13 +34,22 @@ export default async function SaldosPage() {
     <ResidentPortalShell paymentIban={portal.paymentIban}>
       <main className="page-shell page-shell--portal">
         <ResidentHubNav />
+        <p className="page-eyebrow">Fração {portal.unitCode ?? "—"}</p>
         <h1 className="page-title">Conta corrente</h1>
-        <p className="page-lead">
-          Fração <strong>{portal.unitCode ?? "—"}</strong>. Saldo estimado em dívida nas cobranças listadas:{" "}
-          <strong>{formatCents(openCents)}</strong>.
-        </p>
+        <p className="page-lead">Cobranças registadas e valores já pagos em cada uma.</p>
+        <div className="stat-grid" style={{ marginBottom: 20 }}>
+          <div className="stat">
+            <p className="stat__label">Saldo estimado em dívida</p>
+            <p className={openCents > 0 ? "stat__value stat__value--positive" : "stat__value stat__value--negative"}>
+              {formatCents(openCents)}
+            </p>
+          </div>
+        </div>
         {!charges.length ? (
-          <p>Sem cobranças registadas para a tua fração.</p>
+          <div className="empty">
+            <Icon name="inbox" size={28} />
+            Sem cobranças registadas para a tua fração.
+          </div>
         ) : (
           <div className="data-table-wrap">
             <table className="data-table">
@@ -47,19 +57,25 @@ export default async function SaldosPage() {
                 <tr>
                   <th>Tipo</th>
                   <th>Vencimento</th>
-                  <th>Cobrança</th>
-                  <th>Pago</th>
-                  <th>Em aberto</th>
+                  <th className="num">Cobrança</th>
+                  <th className="num">Pago</th>
+                  <th className="num">Em aberto</th>
                 </tr>
               </thead>
               <tbody>
                 {charges.map((r) => (
                   <tr key={r.id}>
-                    <td>{r.kind}</td>
-                    <td>{r.due_date}</td>
-                    <td>{formatCents(r.amount_cents)}</td>
-                    <td>{formatCents(r.paid)}</td>
-                    <td>{formatCents(r.open)}</td>
+                    <td>
+                      <span className={r.kind === "extraordinaria" ? "badge badge--warning" : "badge"}>
+                        {r.kind === "extraordinaria" ? "Extraordinária" : r.kind === "corrente" ? "Quota" : r.kind}
+                      </span>
+                    </td>
+                    <td className="nowrap">{r.due_date}</td>
+                    <td className="num">{formatCents(r.amount_cents)}</td>
+                    <td className="num">{formatCents(r.paid)}</td>
+                    <td className="num">
+                      {r.open > 0 ? <strong>{formatCents(r.open)}</strong> : <span className="badge badge--success">Pago</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -23,43 +23,19 @@ export function VoidPaymentRowForm(props: {
           e.preventDefault();
         }
       }}
-      style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch", maxWidth: 220 }}
+      className="stack"
+      style={{ gap: 8, maxWidth: 220 }}
     >
       <input type="hidden" name="payment_id" value={props.paymentId} />
-      <label
-        style={{
-          fontSize: 12,
-          display: "flex",
-          gap: 6,
-          cursor: pending ? "default" : "pointer",
-          color: "#475569",
-          alignItems: "flex-start",
-          lineHeight: 1.35,
-        }}
-      >
-        <input type="checkbox" name="send_void_email" disabled={pending} style={{ marginTop: 2 }} />
+      <label className="choice small">
+        <input type="checkbox" name="send_void_email" disabled={pending} />
         Avisar morador por email (desconsiderar recibo anterior)
       </label>
-      <button
-        type="submit"
-        disabled={pending}
-        style={{
-          padding: "6px 10px",
-          borderRadius: 8,
-          fontSize: 13,
-          border: "1px solid #fca5a5",
-          background: pending ? "#f1f5f9" : "#fef2f2",
-          color: "#991b1b",
-          cursor: pending ? "not-allowed" : "pointer",
-          fontFamily: "inherit",
-        }}
-      >
+      <button type="submit" disabled={pending} className="btn btn--danger btn--sm">
         {pending ? "A anular…" : "Anular pagamento"}
       </button>
-      {state?.error ? <span style={{ color: "#b00020", fontSize: 12 }}>{state.error}</span> : null}
-      {state?.ok && state.message ? (
-        <span style={{ color: "#047857", fontSize: 12, lineHeight: 1.4 }}>{state.message}</span>
-      ) : null}
+      {state?.error ? <span className="alert alert--error alert--inline">{state.error}</span> : null}
+      {state?.ok && state.message ? <span className="alert alert--success alert--inline">{state.message}</span> : null}
     </form>
   );
 }

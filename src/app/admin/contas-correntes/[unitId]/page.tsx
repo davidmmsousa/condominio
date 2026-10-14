@@ -1,6 +1,7 @@
 import { ReconcileUnitAllocationsButton } from "@/app/admin/contas-correntes/ReconcileUnitAllocationsButton";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
+import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -109,78 +110,86 @@ export default async function ContaCorrenteUnitPage({ params }: Props) {
   const saldo = totalDebit - totalCredit;
 
   return (
-    <main style={{ paddingTop: 24 }}>
-      <p style={{ marginTop: 0 }}>
-        <Link href="/admin/contas-correntes" style={{ color: "#555", fontSize: 14 }}>
-          ← Todas as frações
+    <main>
+      <Link href="/admin/contas-correntes" className="back-link">
+        <Icon name="arrowLeft" size={16} />
+        Todas as frações
+      </Link>
+      <header className="page-header">
+        <div>
+          <p className="page-eyebrow">Conta corrente</p>
+          <h1 className="page-title">Fração {unit.code}</h1>
+          <p className="page-lead">
+            Saldo positivo = o condómino deve ao condomínio (total das cobranças menos pagamentos registados).
+          </p>
+        </div>
+        <Link href="/admin/pagamentos" className="btn btn--primary">
+          Registar pagamento
+          <Icon name="arrowRight" size={16} />
         </Link>
-      </p>
-      <h1 style={{ marginTop: 8 }}>Conta corrente — fração {unit.code}</h1>
-      <p style={{ color: "#555", maxWidth: 720 }}>
-        Saldo devedor positivo = o condómino deve ao condomínio (no total das cobranças vs. pagamentos registados).
-      </p>
-      <ReconcileUnitAllocationsButton unitId={unit.id} />
+      </header>
 
-      <section
-        style={{
-          marginTop: 20,
-          padding: 16,
-          borderRadius: 10,
-          border: "1px solid #e2e8f0",
-          maxWidth: 520,
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 12,
-          fontSize: 14,
-        }}
-      >
-        <div>
-          <div style={{ color: "#64748b" }}>Total cobranças</div>
-          <strong>{formatCents(totalDebit)}</strong>
+      <div className="stat-grid">
+        <div className="stat">
+          <p className="stat__label">Total cobranças</p>
+          <p className="stat__value">{formatCents(totalDebit)}</p>
         </div>
-        <div>
-          <div style={{ color: "#64748b" }}>Total pagamentos</div>
-          <strong>{formatCents(totalCredit)}</strong>
+        <div className="stat">
+          <p className="stat__label">Total pagamentos</p>
+          <p className="stat__value">{formatCents(totalCredit)}</p>
         </div>
-        <div>
-          <div style={{ color: "#64748b" }}>Saldo</div>
-          <strong style={{ color: saldo > 0 ? "#b45309" : saldo < 0 ? "#047857" : "#111" }}>{formatCents(saldo)}</strong>
+        <div className="stat">
+          <p className="stat__label">Saldo</p>
+          <p
+            className={
+              saldo > 0 ? "stat__value stat__value--positive" : saldo < 0 ? "stat__value stat__value--negative" : "stat__value"
+            }
+          >
+            {formatCents(saldo)}
+          </p>
         </div>
-      </section>
+      </div>
 
-      <h2 style={{ fontSize: 18, marginTop: 32 }}>Extrato cronológico</h2>
-      {!timeline.length ? (
-        <p style={{ color: "#64748b" }}>Sem movimentos ainda.</p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", maxWidth: 920, borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                <th style={{ padding: "8px 6px" }}>Data</th>
-                <th style={{ padding: "8px 6px" }}>Descrição</th>
-                <th style={{ padding: "8px 6px" }}>Débito</th>
-                <th style={{ padding: "8px 6px" }}>Crédito</th>
-                <th style={{ padding: "8px 6px" }}>Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timeline.map((r, idx) => (
-                <tr key={`${r.sort}-${r.tie}-${idx}`} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>{r.dateLabel}</td>
-                  <td style={{ padding: "8px 6px" }}>{r.label}</td>
-                  <td style={{ padding: "8px 6px" }}>{r.debit ? formatCents(r.debit) : "—"}</td>
-                  <td style={{ padding: "8px 6px" }}>{r.credit ? formatCents(r.credit) : "—"}</td>
-                  <td style={{ padding: "8px 6px", fontWeight: 600 }}>{formatCents(r.balanceAfter)}</td>
+      <div style={{ marginTop: 20 }}>
+        <ReconcileUnitAllocationsButton unitId={unit.id} />
+      </div>
+
+      <section className="section">
+        <h2 className="section__title">Extrato cronológico</h2>
+        {!timeline.length ? (
+          <div className="empty">
+            <Icon name="inbox" size={28} />
+            Sem movimentos ainda.
+          </div>
+        ) : (
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th className="num">Débito</th>
+                  <th className="num">Crédito</th>
+                  <th className="num">Saldo</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <p style={{ marginTop: 28 }}>
-        <Link href="/admin/pagamentos">Registar pagamento / transferência →</Link>
-      </p>
+              </thead>
+              <tbody>
+                {timeline.map((r, idx) => (
+                  <tr key={`${r.sort}-${r.tie}-${idx}`}>
+                    <td className="nowrap">{r.dateLabel}</td>
+                    <td>{r.label}</td>
+                    <td className="num">{r.debit ? formatCents(r.debit) : "—"}</td>
+                    <td className="num">{r.credit ? formatCents(r.credit) : "—"}</td>
+                    <td className="num">
+                      <strong>{formatCents(r.balanceAfter)}</strong>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
