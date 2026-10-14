@@ -1,6 +1,7 @@
 import { Icon } from "@/components/ui/Icon";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
 import { formatCents } from "@/lib/money";
+import { AdjustQuotasForm } from "./AdjustQuotasForm";
 import { GenerateQuotasForm } from "./GenerateQuotasForm";
 import { ManualChargeForm } from "./ManualChargeForm";
 
@@ -40,6 +41,9 @@ export default async function CobrancasAdminPage() {
         </section>
         <section className="card">
           <ManualChargeForm units={units ?? []} />
+        </section>
+        <section className="card">
+          <AdjustQuotasForm disabled={!units?.length} />
         </section>
       </div>
 

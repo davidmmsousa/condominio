@@ -2,6 +2,7 @@ import { CondominiumIbanForm } from "@/app/admin/CondominiumIbanForm";
 import { Icon } from "@/components/ui/Icon";
 import { ensureSingletonCondominiumId } from "@/lib/singletonCondominium";
 import { createServerRouteSupabaseClient } from "@/lib/supabase/server-client";
+import { formatCents } from "@/lib/money";
 import Link from "next/link";
 import { ADMIN_NAV_GROUPS } from "./navItems";
 
@@ -27,6 +28,25 @@ export default async function AdminPage() {
     ibanLoadError = e instanceof Error ? e.message : "Erro ao ler IBAN.";
   }
 
+  let unitCount = 0;
+  let openCents: number | null = null;
+  let treasuryCents: number | null = null;
+  try {
+    const { count } = await supabase.from("units").select("id", { count: "exact", head: true });
+    unitCount = count ?? 0;
+    const [{ data: ch }, { data: al }, { data: mv }] = await Promise.all([
+      supabase.from("charges").select("amount_cents"),
+      supabase.from("payment_allocations").select("applied_cents"),
+      supabase.from("treasury_movements").select("amount_cents"),
+    ]);
+    const sum = (rows: Array<Record<string, number>> | null, key: string) =>
+      (rows ?? []).reduce((a, r) => a + (r[key] ?? 0), 0);
+    openCents = sum(ch, "amount_cents") - sum(al, "applied_cents");
+    treasuryCents = sum(mv, "amount_cents");
+  } catch {
+    /* indicadores são opcionais */
+  }
+
   return (
     <main>
       <header className="page-header">
@@ -39,6 +59,23 @@ export default async function AdminPage() {
           </p>
         </div>
       </header>
+
+      <section className="stat-grid" aria-label="Indicadores">
+        <div className="stat">
+          <p className="stat__label">Frações</p>
+          <p className="stat__value">{unitCount}</p>
+        </div>
+        <div className="stat">
+          <p className="stat__label">Quotas em aberto</p>
+          <p className={`stat__value ${openCents && openCents > 0 ? "stat__value--negative" : "stat__value--positive"}`}>
+            {openCents === null ? "—" : formatCents(openCents)}
+          </p>
+        </div>
+        <div className="stat">
+          <p className="stat__label">Fundo de caixa</p>
+          <p className="stat__value">{treasuryCents === null ? "—" : formatCents(treasuryCents)}</p>
+        </div>
+      </section>
 
       {ADMIN_NAV_GROUPS.map((group) => (
         <section key={group.title} className="admin-group" aria-label={group.title}>

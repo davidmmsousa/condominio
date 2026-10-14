@@ -479,6 +479,93 @@ export async function generateMonthlyQuotasAction(_prev: ActionState | null, for
   }
 }
 
+export async function adjustMonthlyQuotasAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+    const cid = await singletonCondoId(supabase);
+    const fromYm = String(formData.get("from_month") ?? "");
+    const toYm = String(formData.get("to_month") ?? "") || fromYm;
+    const eurosTotal = parseEurosToCents(String(formData.get("total_euros") ?? ""));
+    if (eurosTotal <= 0) throw new Error("Indica o valor total mensal correto (maior que zero).");
+
+    const start = firstDayOfMonthFromInput(fromYm);
+    const end = firstDayOfMonthFromInput(toYm);
+    if (end < start) throw new Error("O mês final tem de ser igual ou posterior ao inicial.");
+
+    const months: string[] = [];
+    for (let d = new Date(start); d <= end; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`);
+      if (months.length > 36) throw new Error("Intervalo demasiado grande (máx. 36 meses).");
+    }
+
+    const { data: units, error: ue } = await supabase
+      .from("units")
+      .select("id, permilagem")
+      .eq("condominium_id", cid);
+    if (ue) throw new Error(ue.message);
+    if (!units?.length) throw new Error("Não há frações.");
+    const permilById = new Map(units.map((u) => [u.id as string, u.permilagem as number]));
+
+    let updated = 0;
+    const touchedMonths: string[] = [];
+    const missingMonths: string[] = [];
+
+    for (const month of months) {
+      const { data: charges, error: ce } = await supabase
+        .from("charges")
+        .select("id, unit_id, amount_cents")
+        .eq("condominium_id", cid)
+        .eq("kind", "corrente")
+        .eq("reference_month", month);
+      if (ce) throw new Error(ce.message);
+      if (!charges?.length) {
+        missingMonths.push(month.slice(0, 7));
+        continue;
+      }
+
+      const permilages = charges.map((c) => permilById.get(c.unit_id as string) ?? 0);
+      const parts = splitTotalCentsByPermilages(permilages, eurosTotal);
+      if (parts.some((v) => v <= 0)) {
+        throw new Error(`Em ${month.slice(0, 7)} ficaram frações com valor zero; revisa permilagens ou total.`);
+      }
+
+      for (let i = 0; i < charges.length; i++) {
+        if (charges[i].amount_cents === parts[i]) continue;
+        const { error: upErr } = await supabase.from("charges").update({ amount_cents: parts[i] }).eq("id", charges[i].id);
+        if (upErr) throw new Error(upErr.message);
+        updated++;
+      }
+      touchedMonths.push(month.slice(0, 7));
+    }
+
+    if (!touchedMonths.length) {
+      throw new Error(`Não existem quotas correntes geradas em ${missingMonths.join(", ")}.`);
+    }
+
+    const { data: payUnits } = await supabase.from("payments").select("unit_id").eq("condominium_id", cid);
+    const unitIdsToReconcile = [...new Set((payUnits ?? []).map((row) => row.unit_id as string))];
+    for (const uid of unitIdsToReconcile) {
+      await reconcilePaymentAllocationsForUnit(supabase, { condominiumId: cid, unitId: uid });
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/cobrancas");
+    revalidatePath("/admin/pagamentos");
+    revalidatePath("/admin/pagamentos/tabela-geral");
+    revalidatePath("/admin/contas-correntes");
+    revalidatePath("/minha-conta");
+    revalidatePath("/minha-conta/saldos");
+
+    let message = `Corrigidas ${updated} quota(s) em ${touchedMonths.length} mês(es) (${touchedMonths[0]}${
+      touchedMonths.length > 1 ? ` a ${touchedMonths[touchedMonths.length - 1]}` : ""
+    }). Pagamentos reconciliados em ${unitIdsToReconcile.length} fração(ões).`;
+    if (missingMonths.length) message += ` Sem quotas geradas em: ${missingMonths.join(", ")}.`;
+    return { ok: true, message };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao corrigir quotas." };
+  }
+}
+
 export async function createPaymentAction(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   try {
     const { supabase, user } = await requireAdmin();
